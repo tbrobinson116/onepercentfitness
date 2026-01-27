@@ -1,10 +1,18 @@
 import axios from 'axios';
 import {
-  ClassificationResult,
   DutyResult,
   ZonosClassifyResponse,
   ZonosLandedCostResponse,
 } from '../types';
+
+export interface ZonosClassificationResult {
+  hsCode: string;
+  hsCode6: string;
+  description: string;
+  confidence: number;
+  productName?: string;
+  provider: 'zonos';
+}
 
 const ZONOS_API_KEY = process.env.ZONOS_API_KEY;
 const ZONOS_BASE_URL = 'https://api.zonos.com';
@@ -13,42 +21,48 @@ const ZONOS_BASE_URL = 'https://api.zonos.com';
 const USE_MOCK = !ZONOS_API_KEY || ZONOS_API_KEY === 'your_zonos_api_key';
 
 // Mock classification data for common product categories
-const MOCK_CLASSIFICATIONS: Record<string, ClassificationResult> = {
+const MOCK_CLASSIFICATIONS: Record<string, Omit<ZonosClassificationResult, 'productName'>> = {
   default: {
     hsCode: '6403.99.0000',
     hsCode6: '6403.99',
     description: 'Footwear with outer soles of rubber, plastics, leather or composition leather and uppers of leather',
     confidence: 0.87,
+    provider: 'zonos',
   },
   shoe: {
     hsCode: '6403.99.0000',
     hsCode6: '6403.99',
     description: 'Footwear with outer soles of rubber, plastics, leather or composition leather and uppers of leather',
     confidence: 0.92,
+    provider: 'zonos',
   },
   watch: {
     hsCode: '9102.11.0000',
     hsCode6: '9102.11',
     description: 'Wrist watches, electrically operated, with mechanical display only',
     confidence: 0.89,
+    provider: 'zonos',
   },
   bag: {
     hsCode: '4202.21.0000',
     hsCode6: '4202.21',
     description: 'Handbags with outer surface of leather or composition leather',
     confidence: 0.91,
+    provider: 'zonos',
   },
   electronics: {
     hsCode: '8471.30.0000',
     hsCode6: '8471.30',
     description: 'Portable automatic data processing machines, weighing not more than 10 kg',
     confidence: 0.88,
+    provider: 'zonos',
   },
   clothing: {
     hsCode: '6109.10.0000',
     hsCode6: '6109.10',
     description: 'T-shirts, singlets and other vests, of cotton, knitted or crocheted',
     confidence: 0.85,
+    provider: 'zonos',
   },
 };
 
@@ -67,10 +81,10 @@ const FRENCH_VAT_RATE = 0.20; // 20% standard VAT
 /**
  * Classify a product image and return HS code
  */
-export async function classifyProduct(
+export async function classifyWithZonos(
   imageBase64: string,
   productName?: string
-): Promise<ClassificationResult> {
+): Promise<ZonosClassificationResult> {
   if (USE_MOCK) {
     return getMockClassification(productName);
   }
@@ -98,6 +112,7 @@ export async function classifyProduct(
       description: data.description,
       confidence: data.confidence_score,
       productName,
+      provider: 'zonos',
     };
   } catch (error) {
     console.error('Zonos classification error:', error);
@@ -166,7 +181,7 @@ export async function calculateDuty(
 /**
  * Get mock classification based on product name keywords
  */
-function getMockClassification(productName?: string): ClassificationResult {
+function getMockClassification(productName?: string): ZonosClassificationResult {
   if (!productName) {
     return MOCK_CLASSIFICATIONS.default;
   }

@@ -43,6 +43,10 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     navigation.navigate('History');
   };
 
+  const handleSettings = () => {
+    navigation.navigate('Settings');
+  };
+
   const getStatusColor = () => {
     switch (status) {
       case 'connected': return '#34C759';
@@ -69,8 +73,15 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>DutySnap</Text>
-        <Text style={styles.subtitle}>Scan items, know your duties</Text>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.title}>DutySnap</Text>
+            <Text style={styles.subtitle}>Scan items, know your duties</Text>
+          </View>
+          <TouchableOpacity style={styles.settingsButton} onPress={handleSettings}>
+            <Text style={styles.settingsIcon}>⚙️</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Glasses Status Card */}
@@ -163,6 +174,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  settingsButton: {
+    padding: 8,
+  },
+  settingsIcon: {
+    fontSize: 24,
   },
   title: {
     fontSize: 34,

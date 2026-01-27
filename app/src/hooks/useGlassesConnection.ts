@@ -1,13 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GlassesConnectionStatus, GlassesDevice } from '../types';
-import * as glassesService from '../services/glasses';
+import * as metaGlasses from '../services/metaGlasses';
+import {
+  GlassesState,
+  GlassesDevice,
+  ConnectionStatus,
+} from '../services/metaGlasses';
 
 interface UseGlassesConnectionReturn {
-  status: GlassesConnectionStatus;
+  status: ConnectionStatus;
   device: GlassesDevice | null;
   availableDevices: GlassesDevice[];
+  batteryLevel: number;
   isSearching: boolean;
   isConnected: boolean;
+  isUsingRealSDK: boolean;
   search: () => Promise<void>;
   connect: (device: GlassesDevice) => Promise<boolean>;
   disconnect: () => Promise<void>;
@@ -15,25 +21,20 @@ interface UseGlassesConnectionReturn {
 }
 
 export function useGlassesConnection(): UseGlassesConnectionReturn {
-  const [status, setStatus] = useState<GlassesConnectionStatus>('disconnected');
-  const [device, setDevice] = useState<GlassesDevice | null>(null);
+  const [state, setState] = useState<GlassesState>(metaGlasses.getState());
   const [availableDevices, setAvailableDevices] = useState<GlassesDevice[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Subscribe to status changes
-    const unsubscribe = glassesService.addStatusListener((newStatus) => {
-      setStatus(newStatus);
-      if (newStatus === 'connected') {
-        setDevice(glassesService.getConnectedDevice());
-      } else if (newStatus === 'disconnected') {
-        setDevice(null);
+    // Subscribe to state changes from the glasses service
+    const unsubscribe = metaGlasses.subscribeToState((newState) => {
+      setState(newState);
+
+      // Clear error when successfully connected
+      if (newState.status === 'connected') {
+        setError(null);
       }
     });
-
-    // Get initial status
-    setStatus(glassesService.getConnectionStatus());
-    setDevice(glassesService.getConnectedDevice());
 
     return unsubscribe;
   }, []);
@@ -41,38 +42,52 @@ export function useGlassesConnection(): UseGlassesConnectionReturn {
   const search = useCallback(async () => {
     setError(null);
     try {
-      const devices = await glassesService.searchForGlasses();
+      const devices = await metaGlasses.searchForDevices();
       setAvailableDevices(devices);
+
+      if (devices.length === 0) {
+        setError('No glasses found. Make sure your glasses are turned on and nearby.');
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to search for glasses');
+      const message = err instanceof Error ? err.message : 'Failed to search for glasses';
+      setError(message);
+      setAvailableDevices([]);
     }
   }, []);
 
   const connect = useCallback(async (targetDevice: GlassesDevice): Promise<boolean> => {
     setError(null);
     try {
-      const success = await glassesService.connectToGlasses(targetDevice);
-      if (success) {
-        setDevice(targetDevice);
+      const success = await metaGlasses.connect(targetDevice);
+      if (!success) {
+        setError('Failed to connect to glasses. Please try again.');
       }
       return success;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect');
+      const message = err instanceof Error ? err.message : 'Connection failed';
+      setError(message);
       return false;
     }
   }, []);
 
   const disconnect = useCallback(async () => {
-    await glassesService.disconnectGlasses();
-    setDevice(null);
+    try {
+      await metaGlasses.disconnect();
+      setAvailableDevices([]);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Disconnect failed';
+      setError(message);
+    }
   }, []);
 
   return {
-    status,
-    device,
+    status: state.status,
+    device: state.device,
     availableDevices,
-    isSearching: status === 'searching',
-    isConnected: status === 'connected',
+    batteryLevel: state.batteryLevel,
+    isSearching: state.status === 'searching',
+    isConnected: state.isConnected,
+    isUsingRealSDK: metaGlasses.isUsingRealSDK(),
     search,
     connect,
     disconnect,

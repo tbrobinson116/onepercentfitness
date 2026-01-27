@@ -5,6 +5,7 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { ScanScreen } from '../screens/ScanScreen';
 import { ResultsScreen } from '../screens/ResultsScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -15,6 +16,7 @@ export type RootStackParamList = {
     imageUri?: string;
   };
   History: undefined;
+  Settings: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -61,6 +63,13 @@ export function AppNavigator() {
           component={HistoryScreen}
           options={{
             title: 'Scan History',
+          }}
+        />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{
+            title: 'Settings',
           }}
         />
       </Stack.Navigator>
