@@ -79,7 +79,8 @@ function selectProviderForABTest(weights: {
   let totalWeight = 0;
 
   for (const provider of available) {
-    const weight = mergedWeights[provider] || 0;
+    if (provider === 'auto') continue; // Skip 'auto' in weight lookup
+    const weight = mergedWeights[provider as keyof typeof mergedWeights] || 0;
     if (weight > 0) {
       availableWeights.push({ provider, weight });
       totalWeight += weight;
