@@ -1,15 +1,21 @@
-# CLAUDE.md - AI Assistant Guide for OnePercentFitness
+# CLAUDE.md - AI Assistant Guide for DutySnap
 
 > **Last Updated:** 2026-01-27
-> **Repository Status:** New project - initial setup
+> **Repository Status:** Active development - MVP phase
 
 ## Project Overview
 
-**OnePercentFitness** is a fitness tracking application inspired by the "1% improvement" philosophy - the concept that small, consistent improvements compound into significant results over time.
+**DutySnap** (working title) is a mobile application that uses Meta Ray-Ban smart glasses to capture product images, classify them using AI to determine HS codes, and calculate French import duties and taxes.
+
+### Core Flow
+```
+📸 Capture image → 🏷️ Classify product → 📊 Get HS code → 💶 Calculate duty/VAT
+   (Meta glasses)     (Zonos API)         (6-10 digit)      (French rates)
+```
 
 ### Current Status
 
-This repository is in **initial setup phase**. The codebase structure and conventions documented below represent the planned architecture and should be updated as the project evolves.
+**Phase 1: Foundation** - Setting up project structure and Meta SDK integration.
 
 ---
 
@@ -17,180 +23,297 @@ This repository is in **initial setup phase**. The codebase structure and conven
 
 | Aspect | Details |
 |--------|---------|
-| **Project Name** | OnePercentFitness |
+| **Project Name** | DutySnap (working title) |
 | **Repository** | `tbrobinson116/onepercentfitness` |
-| **Primary Branch** | `main` (to be created) |
-| **Language(s)** | TBD - Update when tech stack is chosen |
-| **Package Manager** | TBD |
-| **Node Version** | TBD |
+| **Primary Branch** | `main` |
+| **Mobile App** | React Native + TypeScript |
+| **Backend** | Node.js + Express |
+| **Key APIs** | Meta Wearables SDK, Zonos Classify, Zonos Landed Cost |
+| **Target Platform** | iOS 15.2+, Android 10+ |
 
 ---
 
-## Development Workflow
+## Tech Stack
 
-### Git Conventions
+### Mobile App
+- **Framework:** React Native with TypeScript
+- **State:** Zustand
+- **Navigation:** React Navigation
+- **Meta SDK:** Meta Wearables Device Access Toolkit v0.3.0
 
-1. **Branch Naming:**
-   - Feature branches: `feature/<description>`
-   - Bug fixes: `fix/<description>`
-   - Claude AI branches: `claude/<session-id>`
+### Backend API
+- **Runtime:** Node.js 20+
+- **Framework:** Express or Fastify
+- **Database:** PostgreSQL + Prisma
+- **Image Storage:** AWS S3 or Cloudflare R2
 
-2. **Commit Messages:**
-   - Use conventional commits format
-   - Format: `type(scope): description`
-   - Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
-   - Example: `feat(workout): add exercise tracking component`
+### External Services
+| Service | Purpose | Docs |
+|---------|---------|------|
+| **Meta Wearables SDK** | Glasses camera access | [Developer Portal](https://developers.meta.com/wearables/) |
+| **Zonos Classify** | HS code classification | [API Docs](https://zonos.com/docs/supply-chain/classify) |
+| **Zonos Landed Cost** | Duty/VAT calculation | [API Docs](https://zonos.com/docs/supply-chain/landed-cost) |
 
-3. **Before Committing:**
-   - Run linter (when configured)
-   - Run tests (when configured)
-   - Ensure no sensitive data is included
+---
 
-### Commands Reference
+## Project Structure
 
-```bash
-# Development (update when package.json is created)
-npm install          # Install dependencies
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run test         # Run tests
-npm run lint         # Run linter
-npm run lint:fix     # Fix linting issues
+```
+dutysnap/
+├── CLAUDE.md
+├── README.md
+├── package.json
+│
+├── app/                      # React Native mobile app
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── glasses/      # Meta SDK integration
+│   │   │   ├── scanner/      # Image capture UI
+│   │   │   ├── results/      # Classification display
+│   │   │   └── duty/         # Duty/tax display
+│   │   ├── hooks/
+│   │   │   ├── useGlassesConnection.ts
+│   │   │   ├── useImageCapture.ts
+│   │   │   └── useClassification.ts
+│   │   ├── services/
+│   │   │   ├── metaSDK.ts    # Meta Wearables abstraction
+│   │   │   ├── api.ts        # Backend API client
+│   │   │   └── storage.ts    # Local storage
+│   │   ├── screens/
+│   │   │   ├── HomeScreen.tsx
+│   │   │   ├── ScanScreen.tsx
+│   │   │   ├── ResultsScreen.tsx
+│   │   │   └── HistoryScreen.tsx
+│   │   ├── types/
+│   │   │   ├── product.ts
+│   │   │   ├── classification.ts
+│   │   │   └── duty.ts
+│   │   └── App.tsx
+│   └── package.json
+│
+├── api/                      # Node.js backend
+│   ├── src/
+│   │   ├── routes/
+│   │   │   ├── classify.ts   # POST /api/classify
+│   │   │   └── duty.ts       # POST /api/duty
+│   │   ├── services/
+│   │   │   ├── zonos.ts      # Zonos API client
+│   │   │   └── imageStorage.ts
+│   │   └── index.ts
+│   └── package.json
+│
+└── docs/                     # Documentation
+    └── api.md
 ```
 
 ---
 
-## Project Structure (Planned)
+## Implementation Plan
 
-```
-onepercentfitness/
-├── CLAUDE.md              # This file - AI assistant guide
-├── README.md              # Project documentation
-├── package.json           # Dependencies and scripts
-├── .env.example           # Environment variable template
-├── .gitignore             # Git ignore rules
-│
-├── src/                   # Source code
-│   ├── components/        # Reusable UI components
-│   ├── pages/             # Page components/routes
-│   ├── hooks/             # Custom React hooks (if React)
-│   ├── utils/             # Utility functions
-│   ├── services/          # API services
-│   ├── types/             # TypeScript types/interfaces
-│   └── styles/            # Global styles
-│
-├── api/                   # Backend API (if applicable)
-│   ├── routes/            # API route handlers
-│   ├── models/            # Database models
-│   ├── middleware/        # Express/API middleware
-│   └── utils/             # Backend utilities
-│
-├── prisma/                # Database schema (if using Prisma)
-│   └── schema.prisma
-│
-├── public/                # Static assets
-│
-└── tests/                 # Test files
-    ├── unit/
-    ├── integration/
-    └── e2e/
-```
+### Phase 1: Foundation ✅ In Progress
+- [ ] Set up React Native project with TypeScript
+- [ ] Register as Meta Wearables developer
+- [ ] Integrate Meta SDK for camera access
+- [ ] Implement mock device testing flow
+- [ ] Create basic UI: connection status, capture button
+
+### Phase 2: Classification
+- [ ] Set up backend API (Node.js)
+- [ ] Integrate Zonos Classify API
+- [ ] Implement image upload to S3/R2
+- [ ] Create classification endpoint
+- [ ] Display HS code results in app
+
+### Phase 3: Duty Calculation
+- [ ] Integrate Zonos Landed Cost API
+- [ ] Build duty/tax display UI
+- [ ] Add product value input
+- [ ] Show breakdown: duties, VAT, total landed cost
+
+### Phase 4: Polish
+- [ ] Add user authentication
+- [ ] Implement scan history
+- [ ] Improve UX/UI
+- [ ] Error handling and edge cases
 
 ---
 
-## Code Style & Conventions
+## Key Domain Concepts
 
-### General Principles
+### HS Codes (Harmonized System)
+- International product classification for customs
+- 6 digits = universal, 8-10 digits = country-specific
+- Example: `6403.99` = Footwear with leather uppers
 
-1. **Keep it Simple:** Avoid over-engineering. Only add complexity when necessary.
-2. **DRY but Pragmatic:** Don't repeat yourself, but three similar lines are better than a premature abstraction.
-3. **Self-Documenting Code:** Write clear, descriptive names. Add comments only when logic isn't self-evident.
-4. **Type Safety:** Use TypeScript for type safety (when applicable).
+### French Import Taxes
+| Tax Type | Rate | Notes |
+|----------|------|-------|
+| Customs Duty | Varies by HS | 0-48%+ from TARIC |
+| Standard VAT | 20% | Most goods |
+| Reduced VAT | 10% / 5.5% / 2.1% | Specific categories |
 
-### Naming Conventions
-
-| Type | Convention | Example |
-|------|------------|---------|
-| Files (components) | PascalCase | `WorkoutTracker.tsx` |
-| Files (utilities) | camelCase | `formatDate.ts` |
-| Variables | camelCase | `workoutCount` |
-| Constants | SCREAMING_SNAKE | `MAX_EXERCISES` |
-| Types/Interfaces | PascalCase | `WorkoutSession` |
-| CSS Classes | kebab-case | `workout-card` |
-| Database Tables | snake_case | `workout_sessions` |
-
-### Import Order
-
+### Zonos API Flow
 ```typescript
-// 1. External dependencies
-import React from 'react';
-import { useState } from 'react';
+// 1. Classify product
+POST /api/classify
+{
+  imageUrl: "https://...",
+  productName: "optional description",
+  shipToCountry: "FR"
+}
+// Returns: { hsCode: "6403.99.0000", confidence: 0.92 }
 
-// 2. Internal modules (absolute paths)
-import { Button } from '@/components/ui';
-import { useAuth } from '@/hooks';
-
-// 3. Relative imports
-import { WorkoutCard } from './WorkoutCard';
-import styles from './styles.module.css';
-
-// 4. Types (if separate)
-import type { Workout } from '@/types';
+// 2. Calculate landed cost
+POST /api/duty
+{
+  hsCode: "6403.99.0000",
+  productValue: 150,
+  currency: "EUR"
+}
+// Returns: { duties: 12.00, vat: 32.40, total: 194.40 }
 ```
-
----
-
-## Domain Concepts
-
-### Core Entities (Planned)
-
-- **User:** Application user with profile and preferences
-- **Workout:** A single workout session
-- **Exercise:** Individual exercise within a workout
-- **Progress:** User's progress tracking over time
-- **Goal:** User-defined fitness goals
-
-### Key Features (Planned)
-
-1. **Workout Logging:** Track exercises, sets, reps, weight
-2. **Progress Tracking:** Visualize improvements over time
-3. **Goal Setting:** Define and track fitness goals
-4. **1% Improvements:** Highlight daily incremental progress
 
 ---
 
 ## Environment Variables
 
-Create a `.env.local` file based on `.env.example` (when created):
-
 ```bash
-# Database
-DATABASE_URL=
+# Backend API
+PORT=3001
+DATABASE_URL=postgresql://...
 
-# Authentication
-AUTH_SECRET=
+# Zonos API
+ZONOS_API_KEY=your_zonos_api_key
 
-# API Keys (if needed)
-# EXTERNAL_API_KEY=
+# Image Storage (S3)
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_S3_BUCKET=dutysnap-images
+
+# Optional: OpenAI for enhanced classification
+OPENAI_API_KEY=
+
+# Meta (if required for SDK)
+META_APP_ID=
 ```
-
-**Never commit `.env` files with actual secrets.**
 
 ---
 
-## Testing Strategy
+## Meta Wearables SDK Reference
 
-### Test Types (When Implemented)
+### Supported Devices
+- Ray-Ban Meta Gen-1 & Gen-2
+- Oakley Meta HSTN
 
-1. **Unit Tests:** Test individual functions and components
-2. **Integration Tests:** Test feature workflows
-3. **E2E Tests:** Test complete user journeys
+### Key Capabilities
+```swift
+// iOS - Capture photo
+let imageData = try await session.capturePhoto(format: .jpeg)
 
-### Test File Naming
+// Android - Capture photo
+val photo = session.capturePhoto(format = PhotoFormat.JPEG)
+```
 
-- Unit tests: `*.test.ts` or `*.test.tsx`
-- Integration tests: `*.integration.test.ts`
-- E2E tests: `*.e2e.test.ts`
+### SDK Setup
+- Android: [github.com/facebook/meta-wearables-dat-android](https://github.com/facebook/meta-wearables-dat-android)
+- iOS: [github.com/facebook/meta-wearables-dat-ios](https://github.com/facebook/meta-wearables-dat-ios)
+- Mock device available for testing without hardware
+
+---
+
+## Commands Reference
+
+```bash
+# Mobile App (from /app directory)
+npm install              # Install dependencies
+npm start                # Start Metro bundler
+npm run ios              # Run on iOS simulator
+npm run android          # Run on Android emulator
+
+# Backend API (from /api directory)
+npm install              # Install dependencies
+npm run dev              # Start dev server
+npm run build            # Build for production
+npm test                 # Run tests
+
+# Database
+npx prisma migrate dev   # Run migrations
+npx prisma studio        # Open Prisma Studio
+```
+
+---
+
+## Git Conventions
+
+### Branch Naming
+- Feature: `feature/<description>`
+- Bug fix: `fix/<description>`
+- Claude AI: `claude/<session-id>`
+
+### Commit Messages
+```
+feat(scan): add image capture from glasses
+fix(duty): correct VAT calculation for reduced rates
+docs(readme): update setup instructions
+```
+
+---
+
+## API Endpoints
+
+### POST /api/classify
+Classify a product image and return HS code.
+
+**Request:**
+```json
+{
+  "imageBase64": "data:image/jpeg;base64,...",
+  "productName": "optional product description"
+}
+```
+
+**Response:**
+```json
+{
+  "hsCode": "6403.99.0000",
+  "hsCode6": "6403.99",
+  "description": "Footwear with outer soles of rubber/plastics and uppers of leather",
+  "confidence": 0.92
+}
+```
+
+### POST /api/duty
+Calculate import duties and taxes for France.
+
+**Request:**
+```json
+{
+  "hsCode": "6403.99.0000",
+  "productValue": 150.00,
+  "currency": "EUR",
+  "originCountry": "US"
+}
+```
+
+**Response:**
+```json
+{
+  "duties": {
+    "amount": 12.00,
+    "rate": "8%"
+  },
+  "vat": {
+    "amount": 32.40,
+    "rate": "20%"
+  },
+  "totalLandedCost": 194.40,
+  "breakdown": [
+    { "type": "Product", "amount": 150.00 },
+    { "type": "Customs Duty", "amount": 12.00 },
+    { "type": "VAT", "amount": 32.40 }
+  ]
+}
+```
 
 ---
 
@@ -198,58 +321,44 @@ AUTH_SECRET=
 
 ### When Working on This Project
 
-1. **Read Before Writing:** Always read existing files before modifying them.
-2. **Follow Existing Patterns:** Match the coding style already in use.
-3. **Minimal Changes:** Make only the changes necessary for the task.
-4. **No Unsolicited Refactoring:** Don't refactor or "improve" code unless asked.
-5. **Update This File:** Keep CLAUDE.md current as the project evolves.
+1. **Read Before Writing:** Always read existing files before modifying
+2. **Follow Patterns:** Match existing code style and architecture
+3. **Minimal Changes:** Only change what's necessary
+4. **Update CLAUDE.md:** Keep this file current as project evolves
+5. **Test on Mock:** Use Meta SDK mock device during development
 
-### Common Tasks
-
-#### Adding a New Feature
-1. Check for similar existing implementations
-2. Follow established patterns
-3. Add appropriate tests
-4. Update types if needed
-
-#### Fixing a Bug
-1. Reproduce and understand the issue
-2. Find the root cause
-3. Make minimal fix
-4. Add test to prevent regression
-
-#### Adding a New Component
-1. Check `/src/components` for similar components
-2. Follow existing component structure
-3. Add TypeScript types
-4. Consider reusability
+### Key Files to Understand
+- `/app/src/services/metaSDK.ts` - Glasses integration
+- `/app/src/services/api.ts` - Backend communication
+- `/api/src/services/zonos.ts` - HS classification & duty lookup
+- `/api/src/routes/classify.ts` - Main classification endpoint
 
 ### Things to Avoid
-
-- Adding features not explicitly requested
-- Creating unnecessary abstractions
-- Over-commenting obvious code
-- Adding "just in case" error handling
-- Modifying unrelated files
+- Hardcoding API keys (use env vars)
+- Skipping error handling for API calls
+- Adding features not in current phase
+- Breaking the capture → classify → duty flow
 
 ---
 
 ## Troubleshooting
 
-### Common Issues
-
-*(To be populated as issues arise)*
-
 | Issue | Solution |
 |-------|----------|
-| TBD | TBD |
+| Meta SDK not connecting | Ensure Bluetooth enabled, glasses paired in Meta View app |
+| Classification fails | Check image quality, ensure product is clearly visible |
+| Duty rates seem wrong | Verify HS code is correct, check origin country |
+| Mock device not working | Reinstall SDK, check mock device configuration |
 
 ---
 
 ## Resources
 
-- [1% Improvement Philosophy](https://jamesclear.com/marginal-gains) - The concept behind the app name
-- *(Add framework/library docs as tech stack is chosen)*
+- [Meta Wearables Developer Portal](https://developers.meta.com/wearables/)
+- [Zonos Classify Docs](https://zonos.com/docs/supply-chain/classify)
+- [Zonos Landed Cost Docs](https://zonos.com/docs/supply-chain/landed-cost)
+- [EU TARIC Database](https://ec.europa.eu/taxation_customs/dds2/taric/)
+- [French Customs (Douane)](https://www.douane.gouv.fr/)
 
 ---
 
@@ -257,8 +366,9 @@ AUTH_SECRET=
 
 | Date | Changes |
 |------|---------|
-| 2026-01-27 | Initial CLAUDE.md created for new repository |
+| 2026-01-27 | Complete rewrite for DutySnap customs classification app |
+| 2026-01-27 | Initial CLAUDE.md created |
 
 ---
 
-*This document should be updated as the project evolves. When making significant changes to architecture, conventions, or workflows, please update the relevant sections.*
+*Update this document as the project evolves.*
