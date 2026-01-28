@@ -5,7 +5,7 @@
  *   npx tsx scripts/test-comparison.ts
  *
  * Make sure to set environment variables:
- *   ANTHROPIC_API_KEY, OPENAI_API_KEY, ZONOS_API_KEY
+ *   ANTHROPIC_API_KEY, ZONOS_API_KEY
  */
 
 import 'dotenv/config';
@@ -76,7 +76,7 @@ async function runTest(testCase: TestCase) {
         originCountry: testCase.originCountry,
         shipToCountry: 'FR',
         calculateDuty: !!testCase.productValue,
-        providers: ['anthropic', 'openai', 'zonos'],
+        providers: ['anthropic', 'zonos'],
       }),
     });
 
@@ -92,7 +92,7 @@ async function runTest(testCase: TestCase) {
     console.log('\n📊 Classifications:');
     console.log('-'.repeat(40));
 
-    for (const provider of ['anthropic', 'openai', 'zonos'] as const) {
+    for (const provider of ['anthropic', 'zonos'] as const) {
       const classification = result.classifications[provider];
       if (classification) {
         console.log(`\n${provider.toUpperCase()}:`);
@@ -115,7 +115,7 @@ async function runTest(testCase: TestCase) {
       console.log('\n💶 Duty Calculations:');
       console.log('-'.repeat(40));
 
-      for (const provider of ['anthropic', 'openai', 'zonos'] as const) {
+      for (const provider of ['anthropic', 'zonos'] as const) {
         const duty = result.dutyCalculations[provider];
         if (duty) {
           console.log(`\n${provider.toUpperCase()} (HS: ${duty.hsCode}):`);
@@ -133,9 +133,8 @@ async function runTest(testCase: TestCase) {
     // Display analysis
     console.log('\n🔍 Analysis:');
     console.log('-'.repeat(40));
-    console.log(`Winner: ${result.analysis.winner || 'Undetermined'}`);
     console.log(`HS6 Match (Anthropic vs Zonos): ${result.analysis.hsCodeMatch.hs6Match.anthropicVsZonos ? '✓' : '✗'}`);
-    console.log(`HS6 Match (OpenAI vs Zonos):    ${result.analysis.hsCodeMatch.hs6Match.openaiVsZonos ? '✓' : '✗'}`);
+    console.log(`Exact Match: ${result.analysis.hsCodeMatch.anthropicVsZonos ? '✓' : '✗'}`);
     if (result.analysis.notes) {
       console.log(`Notes: ${result.analysis.notes}`);
     }
@@ -175,20 +174,17 @@ async function main() {
   console.log('                      SUMMARY');
   console.log('═'.repeat(60));
 
-  let anthropicWins = 0;
-  let openaiWins = 0;
-  let ties = 0;
+  let hs6Matches = 0;
+  let exactMatches = 0;
 
   for (const result of results) {
-    if (result.analysis.winner === 'anthropic') anthropicWins++;
-    else if (result.analysis.winner === 'openai') openaiWins++;
-    else if (result.analysis.winner === 'tie') ties++;
+    if (result.analysis.hsCodeMatch.hs6Match.anthropicVsZonos) hs6Matches++;
+    if (result.analysis.hsCodeMatch.anthropicVsZonos) exactMatches++;
   }
 
-  console.log(`\nTests Run:      ${results.length}`);
-  console.log(`Anthropic Wins: ${anthropicWins}`);
-  console.log(`OpenAI Wins:    ${openaiWins}`);
-  console.log(`Ties:           ${ties}`);
+  console.log(`\nTests Run:        ${results.length}`);
+  console.log(`HS6 Matches:      ${hs6Matches}/${results.length} (${((hs6Matches/results.length)*100).toFixed(0)}%)`);
+  console.log(`Exact HS Matches: ${exactMatches}/${results.length} (${((exactMatches/results.length)*100).toFixed(0)}%)`);
   console.log('');
 }
 
