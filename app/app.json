@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "DutySnap",
+    "slug": "dutysnap",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#007AFF"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.dutysnap.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "DutySnap needs camera access to capture product images for classification.",
+        "NSPhotoLibraryUsageDescription": "DutySnap needs photo library access to select product images for classification.",
+        "NSBluetoothAlwaysUsageDescription": "DutySnap uses Bluetooth to connect to your Ray-Ban Meta glasses.",
+        "NSBluetoothPeripheralUsageDescription": "DutySnap uses Bluetooth to connect to your Ray-Ban Meta glasses."
+      }
+    },
+    "android": {
+      "package": "com.dutysnap.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow DutySnap to access your camera."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow DutySnap to access your photos."
+        }
+      ]
+    ]
+  }
+}
