@@ -81,8 +81,7 @@ export async function classifyWithZonos(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'zonos-api-key': apiKey,
-        'zonos-account-id': process.env.ZONOS_ACCOUNT_ID || '',
+        'credentialToken': apiKey,
       },
       body: JSON.stringify({ query, variables }),
     });
@@ -196,8 +195,7 @@ export async function calculateDutyWithZonos(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'zonos-api-key': apiKey,
-        'zonos-account-id': process.env.ZONOS_ACCOUNT_ID || '',
+        'credentialToken': apiKey,
       },
       body: JSON.stringify({ query, variables }),
     });
