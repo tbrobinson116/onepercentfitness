@@ -1,79 +1,115 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import compareRouter from './routes/compare.js';
+import { apiKeyAuth, getApiKeyRoutes } from './middleware/apiAuth.js';
+import workoutRoutes from './routes/workouts.js';
+import nutritionRoutes from './routes/nutrition.js';
+import goalRoutes from './routes/goals.js';
+import profileRoutes from './routes/profile.js';
+import exerciseRoutes from './routes/exercises.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT ?? 3001;
 
-// Middleware
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Large limit for base64 images
+app.use(express.json({ limit: '50mb' }));
+
+// API key authentication (validates key if present, allows unauthenticated for mobile)
+app.use(apiKeyAuth);
+
+// API key management
+app.use('/api/auth', getApiKeyRoutes());
+
+// Core routes
+app.use('/api/workouts', workoutRoutes);
+app.use('/api/nutrition', nutritionRoutes);
+app.use('/api/goals', goalRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/exercises', exerciseRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    app: 'One Percent Fitness API',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// API info
+// API documentation endpoint
 app.get('/api', (_req, res) => {
   res.json({
-    name: 'DutySnap API',
-    version: '0.1.0',
-    description: 'A/B testing API for HS code classification comparison',
-    endpoints: {
-      'POST /api/compare': 'Run classification comparison between Anthropic, OpenAI, and Zonos',
-      'GET /api/compare': 'List all comparison results',
-      'GET /api/compare/:id': 'Get specific comparison result',
-      'GET /api/compare/stats/summary': 'Get aggregated comparison statistics',
+    name: 'One Percent Fitness API',
+    version: '1.0.0',
+    description: 'AI-powered fitness, nutrition, and goal tracking platform',
+    authentication: {
+      method: 'API Key',
+      header: 'X-API-Key: your_api_key',
+      alternative: 'Authorization: Bearer your_api_key',
+      management: '/api/auth/keys',
     },
-    documentation: {
-      compareRequest: {
-        imageBase64: 'Base64 encoded image (data:image/jpeg;base64,...)',
-        imageUrl: 'URL to product image',
-        productName: 'Product name/title',
-        productDescription: 'Detailed product description',
-        originCountry: 'ISO 2-letter country code (e.g., US, CN)',
-        shipToCountry: 'ISO 2-letter destination country (default: FR)',
-        productValue: 'Product value for duty calculation',
-        currency: 'Currency code (default: EUR)',
-        providers: 'Array of providers to test: ["anthropic", "openai", "zonos"]',
-        calculateDuty: 'Whether to calculate duties for each classification',
+    endpoints: {
+      health: 'GET /health',
+      workouts: {
+        list: 'GET /api/workouts',
+        create: 'POST /api/workouts',
+        get: 'GET /api/workouts/:id',
+        update: 'PUT /api/workouts/:id',
+        delete: 'DELETE /api/workouts/:id',
+        generateProgram: 'POST /api/workouts/programs/generate',
+        listPrograms: 'GET /api/workouts/programs',
+      },
+      nutrition: {
+        logDay: 'POST /api/nutrition/log',
+        getDay: 'GET /api/nutrition/log/:date',
+        generateMealPlan: 'POST /api/nutrition/meal-plans/generate',
+        generateRecipe: 'POST /api/nutrition/recipes/generate',
+        listRecipes: 'GET /api/nutrition/recipes',
+        fridge: {
+          list: 'GET /api/nutrition/fridge',
+          add: 'POST /api/nutrition/fridge',
+          update: 'PUT /api/nutrition/fridge/:id',
+          delete: 'DELETE /api/nutrition/fridge/:id',
+        },
+      },
+      goals: {
+        list: 'GET /api/goals',
+        create: 'POST /api/goals',
+        get: 'GET /api/goals/:id',
+        update: 'PUT /api/goals/:id',
+        delete: 'DELETE /api/goals/:id',
+      },
+      profile: {
+        get: 'GET /api/profile',
+        update: 'PUT /api/profile',
+        measurements: {
+          list: 'GET /api/profile/measurements',
+          add: 'POST /api/profile/measurements',
+        },
+        bloodWork: {
+          list: 'GET /api/profile/blood-work',
+          add: 'POST /api/profile/blood-work',
+        },
+      },
+      exercises: {
+        list: 'GET /api/exercises',
+        get: 'GET /api/exercises/:id',
+        search: 'GET /api/exercises?search=bench&muscle=chest&equipment=barbell',
+      },
+      auth: {
+        createKey: 'POST /api/auth/keys',
+        listKeys: 'GET /api/auth/keys',
+        revokeKey: 'DELETE /api/auth/keys/:keyPrefix',
       },
     },
   });
 });
 
-// Routes
-app.use('/api/compare', compareRouter);
-
-// Error handling
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-// Start server
 app.listen(PORT, () => {
-  console.log(`
-╔═══════════════════════════════════════════════════════════╗
-║                    DutySnap API v0.1.0                    ║
-╠═══════════════════════════════════════════════════════════╣
-║  Server running at http://localhost:${PORT}                  ║
-║                                                           ║
-║  Endpoints:                                               ║
-║    GET  /api              - API documentation             ║
-║    POST /api/compare      - Run A/B comparison            ║
-║    GET  /api/compare      - List all results              ║
-║    GET  /api/compare/:id  - Get specific result           ║
-║    GET  /api/compare/stats/summary - Get statistics       ║
-║                                                           ║
-║  Environment:                                             ║
-║    ANTHROPIC_API_KEY: ${process.env.ANTHROPIC_API_KEY ? '✓ configured' : '✗ missing'}                      ║
-║    OPENAI_API_KEY:    ${process.env.OPENAI_API_KEY ? '✓ configured' : '✗ missing'}                      ║
-║    ZONOS_API_KEY:     ${process.env.ZONOS_API_KEY ? '✓ configured' : '✗ missing'}                      ║
-╚═══════════════════════════════════════════════════════════╝
-  `);
+  console.log(`One Percent Fitness API running on port ${PORT}`);
+  console.log(`AI Provider: ${process.env.AI_PROVIDER ?? 'anthropic (default)'}`);
+  console.log(`API docs: http://localhost:${PORT}/api`);
 });
 
 export default app;

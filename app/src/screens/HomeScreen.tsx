@@ -1,267 +1,248 @@
-/**
- * Home Screen - Main entry point with glasses connection status
- */
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
+  ScrollView,
   TouchableOpacity,
-  SafeAreaView,
+  RefreshControl,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useGlassesConnection } from '../hooks';
-import type { RootStackParamList } from '../types';
+import { useStore } from '../services/store';
+import { api } from '../services/api';
+import { colors, typography } from '../theme';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+export function HomeScreen({ navigation }: any) {
+  const { goals, workouts, todayNutrition, macroTargets, profile } = useStore();
+  const [refreshing, setRefreshing] = useState(false);
 
-export function HomeScreen() {
-  const navigation = useNavigation<NavigationProp>();
-  const {
-    connectionState,
-    device,
-    isConnected,
-    isScanning,
-    isConnecting,
-    isMockDevice,
-    startScanning,
-    disconnect,
-  } = useGlassesConnection();
+  const today = new Date().toISOString().split('T')[0];
+  const todayWorkout = workouts.find((w) => w.date === today);
+  const activeGoals = goals.filter((g) => g.status === 'active');
 
-  const getStatusColor = () => {
-    switch (connectionState) {
-      case 'connected':
-        return '#4CAF50';
-      case 'connecting':
-      case 'scanning':
-        return '#FFC107';
-      case 'error':
-        return '#F44336';
-      default:
-        return '#9E9E9E';
+  const caloriesConsumed = todayNutrition?.totals.calories ?? 0;
+  const proteinConsumed = todayNutrition?.totals.proteinG ?? 0;
+  const calorieTarget = macroTargets.calories;
+  const proteinTarget = macroTargets.proteinG;
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const [goalsData, workoutsData, nutritionData] = await Promise.all([
+        api.getGoals(),
+        api.getWorkouts(),
+        api.getNutritionDay(today),
+      ]);
+      useStore.getState().setGoals(goalsData);
+      useStore.getState().setWorkouts(workoutsData);
+      useStore.getState().setTodayNutrition(nutritionData);
+    } catch {
+      // Offline mode - use local data
     }
+    setRefreshing(false);
   };
 
-  const getStatusText = () => {
-    switch (connectionState) {
-      case 'connected':
-        return `Connected to ${device?.name || 'glasses'}`;
-      case 'connecting':
-        return 'Connecting...';
-      case 'scanning':
-        return 'Scanning for glasses...';
-      case 'error':
-        return 'Connection error';
-      default:
-        return 'Not connected';
-    }
-  };
+  useEffect(() => {
+    onRefresh();
+  }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
+    >
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>DutySnap</Text>
-        <Text style={styles.subtitle}>
-          Customs Classification with Meta Glasses
+        <Text style={styles.greeting}>
+          Welcome back{profile?.name ? `, ${profile.name}` : ''}
         </Text>
+        <Text style={styles.subtitle}>1% better every day</Text>
       </View>
 
-      {/* Connection Status Card */}
-      <View style={styles.statusCard}>
-        <View style={styles.statusRow}>
-          <View
-            style={[styles.statusDot, { backgroundColor: getStatusColor() }]}
-          />
-          <Text style={styles.statusText}>{getStatusText()}</Text>
+      {/* Today's Progress */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Today's Progress</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{caloriesConsumed}</Text>
+            <Text style={styles.statLabel}>/ {calorieTarget} cal</Text>
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${Math.min((caloriesConsumed / calorieTarget) * 100, 100)}%` },
+                ]}
+              />
+            </View>
+          </View>
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{proteinConsumed}g</Text>
+            <Text style={styles.statLabel}>/ {proteinTarget}g protein</Text>
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  styles.proteinFill,
+                  { width: `${Math.min((proteinConsumed / proteinTarget) * 100, 100)}%` },
+                ]}
+              />
+            </View>
+          </View>
         </View>
+      </View>
 
-        {isMockDevice && isConnected && (
-          <Text style={styles.mockBadge}>Mock Device</Text>
-        )}
-
-        {device && isConnected && (
-          <View style={styles.deviceInfo}>
-            <Text style={styles.deviceInfoText}>
-              Battery: {device.batteryLevel}%
-            </Text>
-            <Text style={styles.deviceInfoText}>
-              Firmware: {device.firmwareVersion}
+      {/* Today's Workout */}
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('Workouts')}
+      >
+        <Text style={styles.cardTitle}>Workout</Text>
+        {todayWorkout ? (
+          <View>
+            <Text style={styles.workoutName}>{todayWorkout.name}</Text>
+            <Text style={styles.workoutDetail}>
+              {todayWorkout.exercises.length} exercises
+              {todayWorkout.isCompleted ? ' - Completed' : ' - Tap to start'}
             </Text>
           </View>
+        ) : (
+          <View>
+            <Text style={styles.emptyText}>No workout scheduled today</Text>
+            <Text style={styles.actionText}>Tap to start a workout or generate a program</Text>
+          </View>
         )}
+      </TouchableOpacity>
 
-        {!isConnected && !isScanning && !isConnecting && (
-          <TouchableOpacity
-            style={styles.connectButton}
-            onPress={startScanning}
-          >
-            <Text style={styles.connectButtonText}>Connect Glasses</Text>
+      {/* Active Goals */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>Active Goals</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Goals')}>
+            <Text style={styles.seeAll}>See All</Text>
+          </TouchableOpacity>
+        </View>
+        {activeGoals.length > 0 ? (
+          activeGoals.slice(0, 3).map((goal) => (
+            <View key={goal.id} style={styles.goalRow}>
+              <View style={styles.goalInfo}>
+                <Text style={styles.goalTitle}>{goal.title}</Text>
+                <Text style={styles.goalType}>{goal.type}</Text>
+              </View>
+              <View style={styles.goalProgress}>
+                <Text style={styles.goalPercent}>{goal.progressPercent}%</Text>
+                <View style={styles.miniProgress}>
+                  <View
+                    style={[styles.miniProgressFill, { width: `${goal.progressPercent}%` }]}
+                  />
+                </View>
+              </View>
+            </View>
+          ))
+        ) : (
+          <TouchableOpacity onPress={() => navigation.navigate('Goals')}>
+            <Text style={styles.emptyText}>No goals set yet</Text>
+            <Text style={styles.actionText}>Tap to set your first goal</Text>
           </TouchableOpacity>
         )}
-
-        {isConnected && (
-          <TouchableOpacity
-            style={[styles.connectButton, styles.disconnectButton]}
-            onPress={disconnect}
-          >
-            <Text style={styles.connectButtonText}>Disconnect</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
-      {/* Action Buttons */}
-      <View style={styles.actions}>
+      {/* Quick Actions */}
+      <View style={styles.quickActions}>
         <TouchableOpacity
-          style={[styles.actionButton, styles.primaryButton]}
-          onPress={() => navigation.navigate('Scan')}
+          style={styles.quickAction}
+          onPress={() => navigation.navigate('Workouts')}
         >
-          <Text style={styles.actionButtonText}>📸 Scan Product</Text>
-          <Text style={styles.actionButtonSubtext}>
-            {isConnected ? 'Use glasses or camera' : 'Use device camera'}
-          </Text>
+          <Text style={styles.quickActionIcon}>💪</Text>
+          <Text style={styles.quickActionText}>Start Workout</Text>
         </TouchableOpacity>
-
         <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => navigation.navigate('History')}
+          style={styles.quickAction}
+          onPress={() => navigation.navigate('Nutrition')}
         >
-          <Text style={styles.actionButtonText}>📋 View History</Text>
-          <Text style={styles.actionButtonSubtext}>
-            See previous classifications
-          </Text>
+          <Text style={styles.quickActionIcon}>🍽️</Text>
+          <Text style={styles.quickActionText}>Log Meal</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.quickAction}
+          onPress={() => navigation.navigate('Profile')}
+        >
+          <Text style={styles.quickActionIcon}>📏</Text>
+          <Text style={styles.quickActionText}>Log Metrics</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Info Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Point your glasses at a product and tap capture to classify it for
-          French customs duties.
-        </Text>
-      </View>
-    </SafeAreaView>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  statusCard: {
-    backgroundColor: '#fff',
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { padding: 24, paddingTop: 60 },
+  greeting: { ...typography.h1, color: colors.text },
+  subtitle: { ...typography.body, color: colors.textSecondary, marginTop: 4 },
+  card: {
+    backgroundColor: colors.card,
     marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 16,
     padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  statusRow: {
+  cardHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
+  cardTitle: { ...typography.h3, color: colors.text, marginBottom: 12 },
+  seeAll: { ...typography.body, color: colors.accent },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  stat: { flex: 1, marginRight: 12 },
+  statValue: { ...typography.h2, color: colors.text },
+  statLabel: { ...typography.caption, color: colors.textSecondary, marginBottom: 8 },
+  progressBar: {
+    height: 6,
+    backgroundColor: colors.border,
+    borderRadius: 3,
+    overflow: 'hidden',
   },
-  statusText: {
-    fontSize: 16,
-    color: '#333',
-    flex: 1,
-  },
-  mockBadge: {
-    backgroundColor: '#E3F2FD',
-    color: '#1976D2',
-    fontSize: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginTop: 8,
-    alignSelf: 'flex-start',
-  },
-  deviceInfo: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  deviceInfoText: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 4,
-  },
-  connectButton: {
-    backgroundColor: '#2196F3',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginTop: 16,
+  progressFill: { height: '100%', backgroundColor: colors.accent, borderRadius: 3 },
+  proteinFill: { backgroundColor: colors.secondary },
+  workoutName: { ...typography.h3, color: colors.text },
+  workoutDetail: { ...typography.body, color: colors.textSecondary, marginTop: 4 },
+  emptyText: { ...typography.body, color: colors.textSecondary },
+  actionText: { ...typography.caption, color: colors.accent, marginTop: 4 },
+  goalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  disconnectButton: {
-    backgroundColor: '#757575',
-  },
-  connectButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  actions: {
-    padding: 16,
-    gap: 12,
-  },
-  actionButton: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  primaryButton: {
-    backgroundColor: '#1976D2',
-  },
-  actionButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  actionButtonSubtext: {
-    fontSize: 13,
-    color: '#666',
+  goalInfo: { flex: 1 },
+  goalTitle: { ...typography.body, color: colors.text, fontWeight: '600' },
+  goalType: { ...typography.caption, color: colors.textSecondary },
+  goalProgress: { alignItems: 'flex-end', width: 80 },
+  goalPercent: { ...typography.body, color: colors.accent, fontWeight: '600' },
+  miniProgress: {
+    width: 60,
+    height: 4,
+    backgroundColor: colors.border,
+    borderRadius: 2,
     marginTop: 4,
+    overflow: 'hidden',
   },
-  footer: {
-    padding: 24,
+  miniProgressFill: { height: '100%', backgroundColor: colors.accent, borderRadius: 2 },
+  quickActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 32,
+  },
+  quickAction: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
     alignItems: 'center',
+    marginHorizontal: 4,
   },
-  footerText: {
-    fontSize: 13,
-    color: '#999',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
+  quickActionIcon: { fontSize: 28, marginBottom: 8 },
+  quickActionText: { ...typography.caption, color: colors.text, textAlign: 'center' },
 });

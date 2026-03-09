@@ -1,8 +1,7 @@
 {
-  "name": "dutysnap-api",
-  "version": "0.1.0",
-  "description": "DutySnap API - Product classification and duty calculation with A/B testing",
-  "main": "dist/index.js",
+  "name": "onepercent-fitness-api",
+  "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
@@ -10,21 +9,20 @@
     "test": "vitest"
   },
   "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "zod": "^3.24.0",
     "@anthropic-ai/sdk": "^0.39.0",
     "openai": "^4.77.0",
-    "express": "^4.21.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "uuid": "^11.0.4",
-    "zod": "^3.24.1"
+    "uuid": "^11.0.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
-    "@types/node": "^22.10.5",
+    "@types/cors": "^2.8.17",
     "@types/uuid": "^10.0.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3",
-    "vitest": "^2.1.8"
+    "tsx": "^4.19.0",
+    "typescript": "~5.7.0",
+    "vitest": "^2.0.0"
   }
 }

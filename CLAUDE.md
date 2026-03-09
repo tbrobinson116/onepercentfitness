@@ -1,21 +1,23 @@
-# CLAUDE.md - AI Assistant Guide for DutySnap
+# CLAUDE.md - AI Assistant Guide for One Percent Fitness
 
-> **Last Updated:** 2026-01-27
+> **Last Updated:** 2026-03-09
 > **Repository Status:** Active development - MVP phase
 
 ## Project Overview
 
-**DutySnap** (working title) is a mobile application that uses Meta Ray-Ban smart glasses to capture product images, classify them using AI to determine HS codes, and calculate French import duties and taxes.
+**One Percent Fitness** is a comprehensive fitness app that combines AI-powered workout programming, nutrition tracking, and goal setting. Get 1% better every day.
 
-### Core Flow
+### Core Features
 ```
-📸 Capture image → 🏷️ Classify product → 📊 Get HS code → 💶 Calculate duty/VAT
-   (Meta glasses)     (Zonos API)         (6-10 digit)      (French rates)
+🎯 Goal Setting      → Set strength, physique, weight, and custom goals with photo references
+💪 Workout Programs   → AI-generated periodized programs (like Fitbod)
+📊 Workout Tracking   → Log sets, reps, weight with Fitbod-style UI
+🍽️ Nutrition Tracking → Log meals, track macros (calories, protein, carbs, fat)
+🧑‍🍳 Recipe Generator   → AI creates recipes from your fridge contents
+📏 Body Metrics       → Weight, body fat %, circumference measurements
+🩸 Blood Work         → Track health markers, factored into AI recommendations
+🔑 External API       → API key auth for third-party agents and integrations
 ```
-
-### Current Status
-
-**Phase 1: Foundation** - Setting up project structure and Meta SDK integration.
 
 ---
 
@@ -23,342 +25,244 @@
 
 | Aspect | Details |
 |--------|---------|
-| **Project Name** | DutySnap (working title) |
+| **Project Name** | One Percent Fitness |
 | **Repository** | `tbrobinson116/onepercentfitness` |
 | **Primary Branch** | `main` |
-| **Mobile App** | React Native + TypeScript |
+| **Mobile App** | React Native + Expo + TypeScript |
 | **Backend** | Node.js + Express |
-| **Key APIs** | Meta Wearables SDK, Zonos Classify, Zonos Landed Cost |
-| **Target Platform** | iOS 15.2+, Android 10+ |
+| **AI Providers** | Anthropic Claude + OpenAI (flexible) |
+| **State Management** | Zustand |
+| **Target Platform** | iOS 15+, Android 10+ |
 
 ---
 
 ## Tech Stack
 
 ### Mobile App
-- **Framework:** React Native with TypeScript
-- **State:** Zustand
-- **Navigation:** React Navigation
-- **Meta SDK:** Meta Wearables Device Access Toolkit v0.3.0
+- **Framework:** React Native 0.76 with Expo 52
+- **Language:** TypeScript 5.7 (strict mode)
+- **State:** Zustand 5.0
+- **Navigation:** React Navigation (bottom tabs + stack)
+- **UI:** Custom dark theme
 
 ### Backend API
 - **Runtime:** Node.js 20+
-- **Framework:** Express or Fastify
-- **Database:** PostgreSQL + Prisma
-- **Image Storage:** AWS S3 or Cloudflare R2
-
-### External Services
-| Service | Purpose | Docs |
-|---------|---------|------|
-| **Meta Wearables SDK** | Glasses camera access | [Developer Portal](https://developers.meta.com/wearables/) |
-| **Zonos Classify** | HS code classification | [API Docs](https://zonos.com/docs/supply-chain/classify) |
-| **Zonos Landed Cost** | Duty/VAT calculation | [API Docs](https://zonos.com/docs/supply-chain/landed-cost) |
+- **Framework:** Express 4.21
+- **Validation:** Zod 3.24
+- **AI:** @anthropic-ai/sdk + openai (flexible provider)
+- **Auth:** API key middleware with rate limiting
+- **Storage:** In-memory (ready for PostgreSQL + Prisma)
 
 ---
 
 ## Project Structure
 
 ```
-dutysnap/
+onepercentfitness/
 ├── CLAUDE.md
-├── README.md
-├── package.json
+├── .gitignore
 │
-├── app/                      # React Native mobile app
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── glasses/      # Meta SDK integration
-│   │   │   ├── scanner/      # Image capture UI
-│   │   │   ├── results/      # Classification display
-│   │   │   └── duty/         # Duty/tax display
-│   │   ├── hooks/
-│   │   │   ├── useGlassesConnection.ts
-│   │   │   ├── useImageCapture.ts
-│   │   │   └── useClassification.ts
-│   │   ├── services/
-│   │   │   ├── metaSDK.ts    # Meta Wearables abstraction
-│   │   │   ├── api.ts        # Backend API client
-│   │   │   └── storage.ts    # Local storage
-│   │   ├── screens/
-│   │   │   ├── HomeScreen.tsx
-│   │   │   ├── ScanScreen.tsx
-│   │   │   ├── ResultsScreen.tsx
-│   │   │   └── HistoryScreen.tsx
-│   │   ├── types/
-│   │   │   ├── product.ts
-│   │   │   ├── classification.ts
-│   │   │   └── duty.ts
-│   │   └── App.tsx
-│   └── package.json
+├── app/                          # React Native mobile app
+│   ├── App.tsx                   # Root component
+│   ├── app.json                  # Expo config
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── src/
+│       ├── theme.ts              # Colors, typography
+│       ├── types/
+│       │   └── index.ts          # All TypeScript types
+│       ├── services/
+│       │   ├── api.ts            # Backend API client
+│       │   └── store.ts          # Zustand global store
+│       ├── navigation/
+│       │   └── AppNavigator.tsx   # Tab + stack navigation
+│       └── screens/
+│           ├── HomeScreen.tsx         # Dashboard with daily progress
+│           ├── GoalsScreen.tsx        # Goal setting with photo/strength goals
+│           ├── WorkoutsScreen.tsx     # Workout list, programs, history
+│           ├── ActiveWorkoutScreen.tsx # Fitbod-style workout tracker
+│           ├── NutritionScreen.tsx    # Meal logging, macro tracking
+│           ├── ProfileScreen.tsx      # Measurements, blood work, settings
+│           ├── GenerateProgramScreen.tsx # AI program generation form
+│           └── FridgeManagerScreen.tsx   # Fridge contents + recipe gen
 │
-├── api/                      # Node.js backend
-│   ├── src/
-│   │   ├── routes/
-│   │   │   ├── classify.ts   # POST /api/classify
-│   │   │   └── duty.ts       # POST /api/duty
-│   │   ├── services/
-│   │   │   ├── zonos.ts      # Zonos API client
-│   │   │   └── imageStorage.ts
-│   │   └── index.ts
-│   └── package.json
-│
-└── docs/                     # Documentation
-    └── api.md
-```
-
----
-
-## Implementation Plan
-
-### Phase 1: Foundation ✅ In Progress
-- [ ] Set up React Native project with TypeScript
-- [ ] Register as Meta Wearables developer
-- [ ] Integrate Meta SDK for camera access
-- [ ] Implement mock device testing flow
-- [ ] Create basic UI: connection status, capture button
-
-### Phase 2: Classification
-- [ ] Set up backend API (Node.js)
-- [ ] Integrate Zonos Classify API
-- [ ] Implement image upload to S3/R2
-- [ ] Create classification endpoint
-- [ ] Display HS code results in app
-
-### Phase 3: Duty Calculation
-- [ ] Integrate Zonos Landed Cost API
-- [ ] Build duty/tax display UI
-- [ ] Add product value input
-- [ ] Show breakdown: duties, VAT, total landed cost
-
-### Phase 4: Polish
-- [ ] Add user authentication
-- [ ] Implement scan history
-- [ ] Improve UX/UI
-- [ ] Error handling and edge cases
-
----
-
-## Key Domain Concepts
-
-### HS Codes (Harmonized System)
-- International product classification for customs
-- 6 digits = universal, 8-10 digits = country-specific
-- Example: `6403.99` = Footwear with leather uppers
-
-### French Import Taxes
-| Tax Type | Rate | Notes |
-|----------|------|-------|
-| Customs Duty | Varies by HS | 0-48%+ from TARIC |
-| Standard VAT | 20% | Most goods |
-| Reduced VAT | 10% / 5.5% / 2.1% | Specific categories |
-
-### Zonos API Flow
-```typescript
-// 1. Classify product
-POST /api/classify
-{
-  imageUrl: "https://...",
-  productName: "optional description",
-  shipToCountry: "FR"
-}
-// Returns: { hsCode: "6403.99.0000", confidence: 0.92 }
-
-// 2. Calculate landed cost
-POST /api/duty
-{
-  hsCode: "6403.99.0000",
-  productValue: 150,
-  currency: "EUR"
-}
-// Returns: { duties: 12.00, vat: 32.40, total: 194.40 }
-```
-
----
-
-## Environment Variables
-
-```bash
-# Backend API
-PORT=3001
-DATABASE_URL=postgresql://...
-
-# Zonos API
-ZONOS_API_KEY=your_zonos_api_key
-
-# Image Storage (S3)
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_S3_BUCKET=dutysnap-images
-
-# Optional: OpenAI for enhanced classification
-OPENAI_API_KEY=
-
-# Meta (if required for SDK)
-META_APP_ID=
-```
-
----
-
-## Meta Wearables SDK Reference
-
-### Supported Devices
-- Ray-Ban Meta Gen-1 & Gen-2
-- Oakley Meta HSTN
-
-### Key Capabilities
-```swift
-// iOS - Capture photo
-let imageData = try await session.capturePhoto(format: .jpeg)
-
-// Android - Capture photo
-val photo = session.capturePhoto(format = PhotoFormat.JPEG)
-```
-
-### SDK Setup
-- Android: [github.com/facebook/meta-wearables-dat-android](https://github.com/facebook/meta-wearables-dat-android)
-- iOS: [github.com/facebook/meta-wearables-dat-ios](https://github.com/facebook/meta-wearables-dat-ios)
-- Mock device available for testing without hardware
-
----
-
-## Commands Reference
-
-```bash
-# Mobile App (from /app directory)
-npm install              # Install dependencies
-npm start                # Start Metro bundler
-npm run ios              # Run on iOS simulator
-npm run android          # Run on Android emulator
-
-# Backend API (from /api directory)
-npm install              # Install dependencies
-npm run dev              # Start dev server
-npm run build            # Build for production
-npm test                 # Run tests
-
-# Database
-npx prisma migrate dev   # Run migrations
-npx prisma studio        # Open Prisma Studio
-```
-
----
-
-## Git Conventions
-
-### Branch Naming
-- Feature: `feature/<description>`
-- Bug fix: `fix/<description>`
-- Claude AI: `claude/<session-id>`
-
-### Commit Messages
-```
-feat(scan): add image capture from glasses
-fix(duty): correct VAT calculation for reduced rates
-docs(readme): update setup instructions
+└── api/                          # Node.js backend
+    ├── package.json
+    ├── tsconfig.json
+    ├── .env.example
+    └── src/
+        ├── index.ts              # Express server + API docs endpoint
+        ├── types/
+        │   └── index.ts          # Server-side types
+        ├── middleware/
+        │   └── apiAuth.ts        # API key auth + rate limiting
+        ├── data/
+        │   └── exercises.ts      # Exercise database (60+ exercises)
+        ├── services/
+        │   ├── workout-generator.ts  # AI workout program generation
+        │   ├── meal-generator.ts     # AI meal plan + recipe generation
+        │   └── ai/
+        │       ├── index.ts          # AI client factory
+        │       ├── provider.ts       # Provider interface
+        │       ├── anthropic.ts      # Claude integration
+        │       └── openai.ts         # GPT-4o integration
+        └── routes/
+            ├── workouts.ts       # Workout CRUD + program generation
+            ├── nutrition.ts      # Nutrition logging + meal plans + recipes + fridge
+            ├── goals.ts          # Goal CRUD
+            ├── profile.ts        # Profile, measurements, blood work
+            └── exercises.ts      # Exercise database with search/filter
 ```
 
 ---
 
 ## API Endpoints
 
-### POST /api/classify
-Classify a product image and return HS code.
-
-**Request:**
-```json
-{
-  "imageBase64": "data:image/jpeg;base64,...",
-  "productName": "optional product description"
-}
+### Authentication
+External API access via API keys:
+```
+POST   /api/auth/keys           # Create API key
+GET    /api/auth/keys           # List keys
+DELETE /api/auth/keys/:prefix   # Revoke key
 ```
 
-**Response:**
-```json
-{
-  "hsCode": "6403.99.0000",
-  "hsCode6": "6403.99",
-  "description": "Footwear with outer soles of rubber/plastics and uppers of leather",
-  "confidence": 0.92
-}
+Headers: `X-API-Key: your_key` or `Authorization: Bearer your_key`
+
+### Core Endpoints
+```
+# Workouts
+GET    /api/workouts
+POST   /api/workouts
+PUT    /api/workouts/:id
+DELETE /api/workouts/:id
+POST   /api/workouts/programs/generate   # AI program generation
+GET    /api/workouts/programs
+
+# Nutrition
+GET    /api/nutrition/log/:date
+POST   /api/nutrition/log
+POST   /api/nutrition/meal-plans/generate  # AI meal plan
+POST   /api/nutrition/recipes/generate     # AI recipe from fridge
+GET    /api/nutrition/recipes
+GET    /api/nutrition/fridge
+POST   /api/nutrition/fridge
+DELETE /api/nutrition/fridge/:id
+
+# Goals
+GET    /api/goals
+POST   /api/goals
+PUT    /api/goals/:id
+DELETE /api/goals/:id
+
+# Profile
+GET    /api/profile
+PUT    /api/profile
+GET    /api/profile/measurements
+POST   /api/profile/measurements
+GET    /api/profile/blood-work
+POST   /api/profile/blood-work
+
+# Exercises
+GET    /api/exercises?search=bench&muscle=chest&equipment=barbell
+GET    /api/exercises/:id
 ```
 
-### POST /api/duty
-Calculate import duties and taxes for France.
+Full API docs available at `GET /api`.
 
-**Request:**
-```json
-{
-  "hsCode": "6403.99.0000",
-  "productValue": 150.00,
-  "currency": "EUR",
-  "originCountry": "US"
-}
+---
+
+## Environment Variables
+
+```bash
+# Server
+PORT=3001
+
+# AI Providers (flexible - use one or both)
+ANTHROPIC_API_KEY=your_anthropic_key
+OPENAI_API_KEY=your_openai_key
+AI_PROVIDER=anthropic  # or "openai"
+
+# Database (future)
+DATABASE_URL=postgresql://localhost:5432/onepercent_fitness
 ```
 
-**Response:**
-```json
-{
-  "duties": {
-    "amount": 12.00,
-    "rate": "8%"
-  },
-  "vat": {
-    "amount": 32.40,
-    "rate": "20%"
-  },
-  "totalLandedCost": 194.40,
-  "breakdown": [
-    { "type": "Product", "amount": 150.00 },
-    { "type": "Customs Duty", "amount": 12.00 },
-    { "type": "VAT", "amount": 32.40 }
-  ]
-}
+---
+
+## Commands
+
+```bash
+# Mobile App (from /app)
+npm install              # Install dependencies
+npm start                # Start Metro/Expo
+npm run ios              # iOS simulator
+npm run android          # Android emulator
+
+# Backend API (from /api)
+npm install              # Install dependencies
+npm run dev              # Start dev server (port 3001)
+npm run build            # Build TypeScript
+npm test                 # Run tests
 ```
+
+---
+
+## Key Design Decisions
+
+1. **Flexible AI Provider** - Abstracted AI layer supports both Claude and GPT-4o, configurable via env var
+2. **External API** - API key auth with rate limiting enables third-party agents and tools to access all fitness data programmatically
+3. **Offline-First Mobile** - App works with local state when API is unavailable
+4. **Exercise Database** - 60+ exercises with muscle groups, equipment, and instructions built-in
+5. **Fitbod-Style Tracking** - Per-set logging with weight, reps, RPE, warmup/drop set support
+
+---
+
+## Implementation Status
+
+### Phase 1: Core MVP ✅ Complete
+- [x] React Native app with dark theme
+- [x] 5-tab navigation (Home, Workouts, Nutrition, Goals, Profile)
+- [x] Goal setting (strength, physique, weight, endurance, custom)
+- [x] AI workout program generation
+- [x] Fitbod-style workout tracking (sets, reps, weight)
+- [x] Nutrition/macro tracking with meal logging
+- [x] Fridge manager + AI recipe generation
+- [x] Body measurements tracking
+- [x] Blood work logging
+- [x] Exercise database (60+ exercises)
+- [x] External API with key auth + rate limiting
+- [x] Backend with all CRUD endpoints
+
+### Phase 2: Enhancement (Next)
+- [ ] Progress photos with goal image comparison
+- [ ] Workout history analytics and charts
+- [ ] Progressive overload tracking/suggestions
+- [ ] Food barcode scanning
+- [ ] PostgreSQL + Prisma migration
+- [ ] User authentication (JWT)
+- [ ] Push notifications for workout reminders
+
+### Phase 3: Social & Advanced
+- [ ] Chef's Edge recipe integration
+- [ ] Social features (share workouts, challenges)
+- [ ] Wearable integrations (Apple Watch, Garmin)
+- [ ] AI coaching chat
+- [ ] Supplement recommendations based on blood work
 
 ---
 
 ## AI Assistant Guidelines
 
-### When Working on This Project
-
 1. **Read Before Writing:** Always read existing files before modifying
-2. **Follow Patterns:** Match existing code style and architecture
-3. **Minimal Changes:** Only change what's necessary
-4. **Update CLAUDE.md:** Keep this file current as project evolves
-5. **Test on Mock:** Use Meta SDK mock device during development
-
-### Key Files to Understand
-- `/app/src/services/metaSDK.ts` - Glasses integration
-- `/app/src/services/api.ts` - Backend communication
-- `/api/src/services/zonos.ts` - HS classification & duty lookup
-- `/api/src/routes/classify.ts` - Main classification endpoint
+2. **Follow Patterns:** Match the dark theme, Zustand store pattern, and Express route structure
+3. **Type Safety:** All new code must use TypeScript with strict mode
+4. **Minimal Changes:** Only change what's necessary
+5. **Exercise Database:** Add new exercises to `/api/src/data/exercises.ts`
 
 ### Things to Avoid
-- Hardcoding API keys (use env vars)
-- Skipping error handling for API calls
-- Adding features not in current phase
-- Breaking the capture → classify → duty flow
-
----
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| Meta SDK not connecting | Ensure Bluetooth enabled, glasses paired in Meta View app |
-| Classification fails | Check image quality, ensure product is clearly visible |
-| Duty rates seem wrong | Verify HS code is correct, check origin country |
-| Mock device not working | Reinstall SDK, check mock device configuration |
-
----
-
-## Resources
-
-- [Meta Wearables Developer Portal](https://developers.meta.com/wearables/)
-- [Zonos Classify Docs](https://zonos.com/docs/supply-chain/classify)
-- [Zonos Landed Cost Docs](https://zonos.com/docs/supply-chain/landed-cost)
-- [EU TARIC Database](https://ec.europa.eu/taxation_customs/dds2/taric/)
-- [French Customs (Douane)](https://www.douane.gouv.fr/)
+- Hardcoding API keys
+- Skipping Zod validation on API routes
+- Breaking the AI provider abstraction
+- Adding dependencies without justification
 
 ---
 
@@ -366,9 +270,9 @@ Calculate import duties and taxes for France.
 
 | Date | Changes |
 |------|---------|
-| 2026-01-27 | Complete rewrite for DutySnap customs classification app |
-| 2026-01-27 | Initial CLAUDE.md created |
+| 2026-03-09 | Complete rewrite: One Percent Fitness MVP with workouts, nutrition, goals, measurements, blood work, AI generation, external API |
+| 2026-01-27 | Original DutySnap project |
 
 ---
 
-*Update this document as the project evolves.*
+*1% better every day.*

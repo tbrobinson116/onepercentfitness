@@ -1,160 +1,71 @@
-/**
- * API Service for DutySnap Backend
- *
- * Handles communication with the classification API
- */
+const API_BASE = 'http://localhost:3001/api';
 
-import type { ComparisonResult } from '../types';
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
 
-// API configuration - update this for production
-const API_BASE_URL = __DEV__
-  ? 'http://localhost:3001'
-  : 'https://api.dutysnap.com'; // Update with real URL
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(error.error ?? `Request failed: ${res.status}`);
+  }
 
-interface ClassifyRequest {
-  imageBase64?: string;
-  imageUrl?: string;
-  productName?: string;
-  productDescription?: string;
-  originCountry?: string;
-  shipToCountry?: string;
-  productValue?: number;
-  currency?: string;
-  calculateDuty?: boolean;
+  if (res.status === 204) return undefined as T;
+  return res.json();
 }
 
-interface ApiError {
-  error: string;
-  message?: string;
-  details?: unknown;
-}
+export const api = {
+  // Profile & Measurements
+  getProfile: () => request<any>('/profile'),
+  updateProfile: (data: any) => request<any>('/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  getMeasurements: () => request<any[]>('/profile/measurements'),
+  addMeasurement: (data: any) => request<any>('/profile/measurements', { method: 'POST', body: JSON.stringify(data) }),
+  deleteMeasurement: (id: string) => request<void>(`/profile/measurements/${id}`, { method: 'DELETE' }),
+  getBloodWork: () => request<any[]>('/profile/blood-work'),
+  addBloodWork: (data: any) => request<any>('/profile/blood-work', { method: 'POST', body: JSON.stringify(data) }),
 
-class ApiService {
-  private baseUrl: string;
+  // Goals
+  getGoals: () => request<any[]>('/goals'),
+  createGoal: (data: any) => request<any>('/goals', { method: 'POST', body: JSON.stringify(data) }),
+  updateGoal: (id: string, data: any) => request<any>(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteGoal: (id: string) => request<void>(`/goals/${id}`, { method: 'DELETE' }),
 
-  constructor(baseUrl: string = API_BASE_URL) {
-    this.baseUrl = baseUrl;
-  }
+  // Workouts
+  getWorkouts: () => request<any[]>('/workouts'),
+  getWorkout: (id: string) => request<any>(`/workouts/${id}`),
+  saveWorkout: (data: any) => request<any>('/workouts', { method: 'POST', body: JSON.stringify(data) }),
+  updateWorkout: (id: string, data: any) => request<any>(`/workouts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteWorkout: (id: string) => request<void>(`/workouts/${id}`, { method: 'DELETE' }),
 
-  private async fetch<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+  // Workout Programs (AI)
+  generateProgram: (data: any) => request<any>('/workouts/programs/generate', { method: 'POST', body: JSON.stringify(data) }),
+  getPrograms: () => request<any[]>('/workouts/programs'),
+  getProgram: (id: string) => request<any>(`/workouts/programs/${id}`),
 
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
+  // Nutrition
+  getNutritionDay: (date: string) => request<any>(`/nutrition/log/${date}`),
+  saveNutritionDay: (data: any) => request<any>('/nutrition/log', { method: 'POST', body: JSON.stringify(data) }),
 
-    if (!response.ok) {
-      const errorData = (await response.json().catch(() => ({}))) as ApiError;
-      throw new Error(errorData.message || `API error: ${response.status}`);
-    }
+  // Meal Plans (AI)
+  generateMealPlan: (data: any) => request<any>('/nutrition/meal-plans/generate', { method: 'POST', body: JSON.stringify(data) }),
+  getMealPlans: () => request<any[]>('/nutrition/meal-plans'),
 
-    return response.json() as Promise<T>;
-  }
+  // Recipes (AI)
+  generateRecipe: (data: any) => request<any>('/nutrition/recipes/generate', { method: 'POST', body: JSON.stringify(data) }),
+  getRecipes: () => request<any[]>('/nutrition/recipes'),
+  getRecipe: (id: string) => request<any>(`/nutrition/recipes/${id}`),
 
-  // Health check
-  async healthCheck(): Promise<boolean> {
-    try {
-      const result = await this.fetch<{ status: string }>('/health');
-      return result.status === 'ok';
-    } catch {
-      return false;
-    }
-  }
+  // Fridge
+  getFridgeItems: () => request<any[]>('/nutrition/fridge'),
+  addFridgeItem: (data: any) => request<any>('/nutrition/fridge', { method: 'POST', body: JSON.stringify(data) }),
+  updateFridgeItem: (id: string, data: any) => request<any>(`/nutrition/fridge/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteFridgeItem: (id: string) => request<void>(`/nutrition/fridge/${id}`, { method: 'DELETE' }),
 
-  // Run classification comparison
-  async classify(request: ClassifyRequest): Promise<ComparisonResult> {
-    return this.fetch<ComparisonResult>('/api/compare', {
-      method: 'POST',
-      body: JSON.stringify({
-        ...request,
-        providers: ['anthropic', 'zonos'],
-        shipToCountry: request.shipToCountry || 'FR',
-        currency: request.currency || 'EUR',
-      }),
-    });
-  }
-
-  // Classify with image URI (converts to base64)
-  async classifyImage(
-    imageUri: string,
-    options: Omit<ClassifyRequest, 'imageBase64' | 'imageUrl'> = {}
-  ): Promise<ComparisonResult> {
-    // Check if it's a URL or local file
-    if (imageUri.startsWith('http://') || imageUri.startsWith('https://')) {
-      return this.classify({
-        ...options,
-        imageUrl: imageUri,
-        calculateDuty: options.productValue !== undefined,
-      });
-    }
-
-    // Convert local file to base64
-    const base64 = await this.imageToBase64(imageUri);
-    return this.classify({
-      ...options,
-      imageBase64: base64,
-      calculateDuty: options.productValue !== undefined,
-    });
-  }
-
-  // Convert image file to base64
-  private async imageToBase64(uri: string): Promise<string> {
-    // In React Native, we'd use FileSystem from expo-file-system
-    // For now, return a placeholder - this will be implemented with expo-file-system
-    const response = await fetch(uri);
-    const blob = await response.blob();
-
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  // Get comparison result by ID
-  async getComparison(id: string): Promise<ComparisonResult> {
-    return this.fetch<ComparisonResult>(`/api/compare/${id}`);
-  }
-
-  // Get all comparison results
-  async getComparisonHistory(): Promise<{
-    results: ComparisonResult[];
-    count: number;
-  }> {
-    return this.fetch<{ results: ComparisonResult[]; count: number }>(
-      '/api/compare'
-    );
-  }
-
-  // Get comparison statistics
-  async getStats(): Promise<{
-    total: number;
-    hs6MatchRate: { anthropic: number };
-    avgConfidence: { anthropic: number; zonos: number };
-  }> {
-    return this.fetch('/api/compare/stats/summary');
-  }
-
-  // Update base URL (useful for settings)
-  setBaseUrl(url: string): void {
-    this.baseUrl = url;
-  }
-
-  getBaseUrl(): string {
-    return this.baseUrl;
-  }
-}
-
-// Singleton instance
-export const api = new ApiService();
+  // Exercises
+  getExercises: (params?: Record<string, string>) => {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return request<any[]>(`/exercises${query}`);
+  },
+  getExercise: (id: string) => request<any>(`/exercises/${id}`),
+};
