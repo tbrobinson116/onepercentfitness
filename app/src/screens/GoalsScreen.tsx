@@ -10,6 +10,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography } from '../theme';
@@ -35,10 +36,65 @@ export function GoalsScreen({ navigation }: any) {
     targetUnit: 'lbs',
     targetWeightKg: '',
     targetBodyFatPercent: '',
+    currentPhotoUri: '',
+    goalImageUri: '',
   });
 
   const activeGoals = goals.filter((g) => g.status === 'active');
   const completedGoals = goals.filter((g) => g.status === 'completed');
+
+  const pickImage = async (field: 'currentPhotoUri' | 'goalImageUri', goalId?: string) => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [3, 4],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const uri = result.assets[0].uri;
+      if (goalId) {
+        updateGoal(goalId, { [field]: uri });
+      } else {
+        setNewGoal({ ...newGoal, [field]: uri });
+      }
+    }
+  };
+
+  const takePhoto = async (field: 'currentPhotoUri' | 'goalImageUri', goalId?: string) => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', 'Camera access is required to take photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [3, 4],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const uri = result.assets[0].uri;
+      if (goalId) {
+        updateGoal(goalId, { [field]: uri });
+      } else {
+        setNewGoal({ ...newGoal, [field]: uri });
+      }
+    }
+  };
+
+  const showImageOptions = (field: 'currentPhotoUri' | 'goalImageUri', goalId?: string) => {
+    Alert.alert(
+      field === 'currentPhotoUri' ? 'Current Photo' : 'Goal / Inspiration Photo',
+      'Choose an option',
+      [
+        { text: 'Take Photo', onPress: () => takePhoto(field, goalId) },
+        { text: 'Choose from Library', onPress: () => pickImage(field, goalId) },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
 
   const handleAddGoal = async () => {
     if (!newGoal.title.trim()) {
@@ -52,6 +108,8 @@ export function GoalsScreen({ navigation }: any) {
       description: newGoal.description || undefined,
       status: 'active',
       progressPercent: 0,
+      currentPhotoUri: newGoal.currentPhotoUri || undefined,
+      goalImageUri: newGoal.goalImageUri || undefined,
     };
 
     if (newGoal.type === 'strength') {
@@ -70,8 +128,7 @@ export function GoalsScreen({ navigation }: any) {
       const created = await api.createGoal(goal);
       addGoal(created);
     } catch {
-      // Offline - add locally
-      addGoal({ ...goal, id: Date.now().toString(), progressPercent: 0 } as FitnessGoal);
+      addGoal({ ...goal, id: Date.now().toString(), createdAt: new Date().toISOString(), progressPercent: 0 } as FitnessGoal);
     }
 
     setShowAddModal(false);
@@ -84,6 +141,8 @@ export function GoalsScreen({ navigation }: any) {
       targetUnit: 'lbs',
       targetWeightKg: '',
       targetBodyFatPercent: '',
+      currentPhotoUri: '',
+      goalImageUri: '',
     });
   };
 
@@ -149,8 +208,60 @@ export function GoalsScreen({ navigation }: any) {
                 </View>
               )}
 
-              {goal.goalImageUri && (
-                <Image source={{ uri: goal.goalImageUri }} style={styles.goalImage} />
+              {/* Photo Comparison */}
+              {(goal.currentPhotoUri || goal.goalImageUri) && (
+                <View style={styles.photoRow}>
+                  {goal.currentPhotoUri ? (
+                    <TouchableOpacity
+                      style={styles.photoContainer}
+                      onPress={() => showImageOptions('currentPhotoUri', goal.id)}
+                    >
+                      <Image source={{ uri: goal.currentPhotoUri }} style={styles.goalPhoto} />
+                      <Text style={styles.photoLabel}>Current</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.photoPlaceholder}
+                      onPress={() => showImageOptions('currentPhotoUri', goal.id)}
+                    >
+                      <Text style={styles.photoPlaceholderText}>+ Current</Text>
+                    </TouchableOpacity>
+                  )}
+                  {goal.goalImageUri ? (
+                    <TouchableOpacity
+                      style={styles.photoContainer}
+                      onPress={() => showImageOptions('goalImageUri', goal.id)}
+                    >
+                      <Image source={{ uri: goal.goalImageUri }} style={styles.goalPhoto} />
+                      <Text style={styles.photoLabel}>Goal</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.photoPlaceholder}
+                      onPress={() => showImageOptions('goalImageUri', goal.id)}
+                    >
+                      <Text style={styles.photoPlaceholderText}>+ Goal</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              {/* Add photos button for physique/weight goals without photos */}
+              {!goal.currentPhotoUri && !goal.goalImageUri && (goal.type === 'physique' || goal.type === 'weight') && (
+                <View style={styles.photoRow}>
+                  <TouchableOpacity
+                    style={styles.photoPlaceholder}
+                    onPress={() => showImageOptions('currentPhotoUri', goal.id)}
+                  >
+                    <Text style={styles.photoPlaceholderText}>+ Current Photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.photoPlaceholder}
+                    onPress={() => showImageOptions('goalImageUri', goal.id)}
+                  >
+                    <Text style={styles.photoPlaceholderText}>+ Goal Photo</Text>
+                  </TouchableOpacity>
+                </View>
               )}
 
               <View style={styles.progressContainer}>
@@ -204,108 +315,145 @@ export function GoalsScreen({ navigation }: any) {
       {/* Add Goal Modal */}
       <Modal visible={showAddModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>New Goal</Text>
+          <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitle}>New Goal</Text>
 
-            {/* Goal Type Selector */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeRow}>
-              {GOAL_TYPES.map((gt) => (
-                <TouchableOpacity
-                  key={gt.type}
-                  style={[styles.typeChip, newGoal.type === gt.type && styles.typeChipActive]}
-                  onPress={() => setNewGoal({ ...newGoal, type: gt.type })}
-                >
-                  <Text style={styles.typeIcon}>{gt.icon}</Text>
-                  <Text
-                    style={[styles.typeLabel, newGoal.type === gt.type && styles.typeLabelActive]}
+              {/* Goal Type Selector */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeRow}>
+                {GOAL_TYPES.map((gt) => (
+                  <TouchableOpacity
+                    key={gt.type}
+                    style={[styles.typeChip, newGoal.type === gt.type && styles.typeChipActive]}
+                    onPress={() => setNewGoal({ ...newGoal, type: gt.type })}
                   >
-                    {gt.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                    <Text style={styles.typeIcon}>{gt.icon}</Text>
+                    <Text
+                      style={[styles.typeLabel, newGoal.type === gt.type && styles.typeLabelActive]}
+                    >
+                      {gt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Goal title (e.g., Bench 250 lbs)"
-              placeholderTextColor={colors.textSecondary}
-              value={newGoal.title}
-              onChangeText={(title) => setNewGoal({ ...newGoal, title })}
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="Goal title (e.g., Bench 250 lbs)"
+                placeholderTextColor={colors.textSecondary}
+                value={newGoal.title}
+                onChangeText={(title) => setNewGoal({ ...newGoal, title })}
+              />
 
-            <TextInput
-              style={[styles.input, styles.multilineInput]}
-              placeholder="Description (optional)"
-              placeholderTextColor={colors.textSecondary}
-              value={newGoal.description}
-              onChangeText={(description) => setNewGoal({ ...newGoal, description })}
-              multiline
-            />
+              <TextInput
+                style={[styles.input, styles.multilineInput]}
+                placeholder="Description (optional)"
+                placeholderTextColor={colors.textSecondary}
+                value={newGoal.description}
+                onChangeText={(description) => setNewGoal({ ...newGoal, description })}
+                multiline
+              />
 
-            {newGoal.type === 'strength' && (
-              <>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Exercise (e.g., Bench Press)"
-                  placeholderTextColor={colors.textSecondary}
-                  value={newGoal.exercise}
-                  onChangeText={(exercise) => setNewGoal({ ...newGoal, exercise })}
-                />
+              {newGoal.type === 'strength' && (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Exercise (e.g., Bench Press)"
+                    placeholderTextColor={colors.textSecondary}
+                    value={newGoal.exercise}
+                    onChangeText={(exercise) => setNewGoal({ ...newGoal, exercise })}
+                  />
+                  <View style={styles.row}>
+                    <TextInput
+                      style={[styles.input, styles.halfInput]}
+                      placeholder="Target value"
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="numeric"
+                      value={newGoal.targetValue}
+                      onChangeText={(targetValue) => setNewGoal({ ...newGoal, targetValue })}
+                    />
+                    <TextInput
+                      style={[styles.input, styles.halfInput]}
+                      placeholder="Unit (lbs, kg, reps)"
+                      placeholderTextColor={colors.textSecondary}
+                      value={newGoal.targetUnit}
+                      onChangeText={(targetUnit) => setNewGoal({ ...newGoal, targetUnit })}
+                    />
+                  </View>
+                </>
+              )}
+
+              {newGoal.type === 'weight' && (
                 <View style={styles.row}>
                   <TextInput
                     style={[styles.input, styles.halfInput]}
-                    placeholder="Target value"
+                    placeholder="Target weight (kg)"
                     placeholderTextColor={colors.textSecondary}
                     keyboardType="numeric"
-                    value={newGoal.targetValue}
-                    onChangeText={(targetValue) => setNewGoal({ ...newGoal, targetValue })}
+                    value={newGoal.targetWeightKg}
+                    onChangeText={(targetWeightKg) => setNewGoal({ ...newGoal, targetWeightKg })}
                   />
                   <TextInput
                     style={[styles.input, styles.halfInput]}
-                    placeholder="Unit (lbs, kg, reps)"
+                    placeholder="Target BF%"
                     placeholderTextColor={colors.textSecondary}
-                    value={newGoal.targetUnit}
-                    onChangeText={(targetUnit) => setNewGoal({ ...newGoal, targetUnit })}
+                    keyboardType="numeric"
+                    value={newGoal.targetBodyFatPercent}
+                    onChangeText={(targetBodyFatPercent) =>
+                      setNewGoal({ ...newGoal, targetBodyFatPercent })
+                    }
                   />
                 </View>
-              </>
-            )}
+              )}
 
-            {newGoal.type === 'weight' && (
-              <View style={styles.row}>
-                <TextInput
-                  style={[styles.input, styles.halfInput]}
-                  placeholder="Target weight (kg)"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                  value={newGoal.targetWeightKg}
-                  onChangeText={(targetWeightKg) => setNewGoal({ ...newGoal, targetWeightKg })}
-                />
-                <TextInput
-                  style={[styles.input, styles.halfInput]}
-                  placeholder="Target BF%"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numeric"
-                  value={newGoal.targetBodyFatPercent}
-                  onChangeText={(targetBodyFatPercent) =>
-                    setNewGoal({ ...newGoal, targetBodyFatPercent })
-                  }
-                />
+              {/* Photo Upload Section */}
+              {(newGoal.type === 'physique' || newGoal.type === 'weight') && (
+                <>
+                  <Text style={styles.photoSectionTitle}>Progress Photos</Text>
+                  <View style={styles.photoRow}>
+                    <TouchableOpacity
+                      style={newGoal.currentPhotoUri ? styles.photoContainer : styles.photoPlaceholder}
+                      onPress={() => showImageOptions('currentPhotoUri')}
+                    >
+                      {newGoal.currentPhotoUri ? (
+                        <>
+                          <Image source={{ uri: newGoal.currentPhotoUri }} style={styles.goalPhoto} />
+                          <Text style={styles.photoLabel}>Current</Text>
+                        </>
+                      ) : (
+                        <Text style={styles.photoPlaceholderText}>+ Current Photo</Text>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={newGoal.goalImageUri ? styles.photoContainer : styles.photoPlaceholder}
+                      onPress={() => showImageOptions('goalImageUri')}
+                    >
+                      {newGoal.goalImageUri ? (
+                        <>
+                          <Image source={{ uri: newGoal.goalImageUri }} style={styles.goalPhoto} />
+                          <Text style={styles.photoLabel}>Goal</Text>
+                        </>
+                      ) : (
+                        <Text style={styles.photoPlaceholderText}>+ Goal / Inspiration</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setShowAddModal(false)}
+                >
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleAddGoal}>
+                  <Text style={styles.saveText}>Add Goal</Text>
+                </TouchableOpacity>
               </View>
-            )}
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowAddModal(false)}
-              >
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleAddGoal}>
-                <Text style={styles.saveText}>Add Goal</Text>
-              </TouchableOpacity>
             </View>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -366,7 +514,48 @@ const styles = StyleSheet.create({
   metricCurrent: { ...typography.h2, color: colors.accent },
   metricSeparator: { ...typography.body, color: colors.textSecondary, marginHorizontal: 4 },
   metricTarget: { ...typography.body, color: colors.textSecondary },
-  goalImage: { width: '100%', height: 120, borderRadius: 8, marginBottom: 8 },
+  photoRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  photoContainer: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  goalPhoto: {
+    width: '100%',
+    height: 140,
+    borderRadius: 12,
+  },
+  photoLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  photoPlaceholder: {
+    flex: 1,
+    height: 100,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.inputBg,
+  },
+  photoPlaceholderText: {
+    ...typography.caption,
+    color: colors.accent,
+  },
+  photoSectionTitle: {
+    ...typography.bodyBold,
+    color: colors.text,
+    marginBottom: 8,
+    marginTop: 4,
+  },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -396,14 +585,12 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'flex-end',
   },
   modal: {
     backgroundColor: colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    maxHeight: '80%',
   },
   modalTitle: { ...typography.h2, color: colors.text, marginBottom: 16 },
   typeRow: { flexDirection: 'row', marginBottom: 16 },

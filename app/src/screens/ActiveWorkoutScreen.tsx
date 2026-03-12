@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,22 +11,79 @@ import {
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography } from '../theme';
-import type { WorkoutExercise, WorkoutSet, Exercise } from '../types';
+import type { WorkoutExercise, Exercise } from '../types';
+
+// Built-in exercise fallback so the picker always has exercises
+const FALLBACK_EXERCISES: Exercise[] = [
+  { id: 'fb-001', name: 'Barbell Bench Press', type: 'strength', primaryMuscle: 'chest', secondaryMuscles: ['shoulders', 'triceps'], equipment: 'barbell' },
+  { id: 'fb-002', name: 'Incline Dumbbell Press', type: 'strength', primaryMuscle: 'chest', secondaryMuscles: ['shoulders', 'triceps'], equipment: 'dumbbell' },
+  { id: 'fb-003', name: 'Push-Ups', type: 'bodyweight', primaryMuscle: 'chest', secondaryMuscles: ['shoulders', 'triceps', 'abs'], equipment: 'bodyweight' },
+  { id: 'fb-004', name: 'Cable Flyes', type: 'strength', primaryMuscle: 'chest', secondaryMuscles: [], equipment: 'cable' },
+  { id: 'fb-005', name: 'Barbell Back Squat', type: 'strength', primaryMuscle: 'quads', secondaryMuscles: ['glutes', 'hamstrings'], equipment: 'barbell' },
+  { id: 'fb-006', name: 'Leg Press', type: 'strength', primaryMuscle: 'quads', secondaryMuscles: ['glutes'], equipment: 'machine' },
+  { id: 'fb-007', name: 'Romanian Deadlift', type: 'strength', primaryMuscle: 'hamstrings', secondaryMuscles: ['glutes', 'lower_back'], equipment: 'barbell' },
+  { id: 'fb-008', name: 'Leg Extension', type: 'strength', primaryMuscle: 'quads', secondaryMuscles: [], equipment: 'machine' },
+  { id: 'fb-009', name: 'Leg Curl', type: 'strength', primaryMuscle: 'hamstrings', secondaryMuscles: [], equipment: 'machine' },
+  { id: 'fb-010', name: 'Barbell Overhead Press', type: 'strength', primaryMuscle: 'shoulders', secondaryMuscles: ['triceps'], equipment: 'barbell' },
+  { id: 'fb-011', name: 'Lateral Raises', type: 'strength', primaryMuscle: 'shoulders', secondaryMuscles: [], equipment: 'dumbbell' },
+  { id: 'fb-012', name: 'Pull-Ups', type: 'bodyweight', primaryMuscle: 'lats', secondaryMuscles: ['biceps', 'back'], equipment: 'bodyweight' },
+  { id: 'fb-013', name: 'Barbell Row', type: 'strength', primaryMuscle: 'back', secondaryMuscles: ['biceps', 'lats'], equipment: 'barbell' },
+  { id: 'fb-014', name: 'Lat Pulldown', type: 'strength', primaryMuscle: 'lats', secondaryMuscles: ['biceps'], equipment: 'cable' },
+  { id: 'fb-015', name: 'Seated Cable Row', type: 'strength', primaryMuscle: 'back', secondaryMuscles: ['biceps', 'lats'], equipment: 'cable' },
+  { id: 'fb-016', name: 'Barbell Curl', type: 'strength', primaryMuscle: 'biceps', secondaryMuscles: ['forearms'], equipment: 'barbell' },
+  { id: 'fb-017', name: 'Dumbbell Curl', type: 'strength', primaryMuscle: 'biceps', secondaryMuscles: [], equipment: 'dumbbell' },
+  { id: 'fb-018', name: 'Tricep Pushdown', type: 'strength', primaryMuscle: 'triceps', secondaryMuscles: [], equipment: 'cable' },
+  { id: 'fb-019', name: 'Skull Crushers', type: 'strength', primaryMuscle: 'triceps', secondaryMuscles: [], equipment: 'barbell' },
+  { id: 'fb-020', name: 'Deadlift', type: 'strength', primaryMuscle: 'back', secondaryMuscles: ['hamstrings', 'glutes', 'traps'], equipment: 'barbell' },
+  { id: 'fb-021', name: 'Hip Thrust', type: 'strength', primaryMuscle: 'glutes', secondaryMuscles: ['hamstrings'], equipment: 'barbell' },
+  { id: 'fb-022', name: 'Calf Raises', type: 'strength', primaryMuscle: 'calves', secondaryMuscles: [], equipment: 'machine' },
+  { id: 'fb-023', name: 'Plank', type: 'bodyweight', primaryMuscle: 'abs', secondaryMuscles: [], equipment: 'bodyweight' },
+  { id: 'fb-024', name: 'Face Pulls', type: 'strength', primaryMuscle: 'shoulders', secondaryMuscles: ['traps'], equipment: 'cable' },
+  { id: 'fb-025', name: 'Dumbbell Shoulder Press', type: 'strength', primaryMuscle: 'shoulders', secondaryMuscles: ['triceps'], equipment: 'dumbbell' },
+  { id: 'fb-026', name: 'Smith Machine Squat', type: 'strength', primaryMuscle: 'quads', secondaryMuscles: ['glutes'], equipment: 'machine' },
+  { id: 'fb-027', name: 'Hack Squat', type: 'strength', primaryMuscle: 'quads', secondaryMuscles: ['glutes'], equipment: 'machine' },
+  { id: 'fb-028', name: 'Chest Dips', type: 'bodyweight', primaryMuscle: 'chest', secondaryMuscles: ['triceps', 'shoulders'], equipment: 'bodyweight' },
+  { id: 'fb-029', name: 'Dumbbell Row', type: 'strength', primaryMuscle: 'back', secondaryMuscles: ['biceps'], equipment: 'dumbbell' },
+  { id: 'fb-030', name: 'Cable Lateral Raise', type: 'strength', primaryMuscle: 'shoulders', secondaryMuscles: [], equipment: 'cable' },
+];
+
+const MUSCLE_FILTERS = ['All', 'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core'];
 
 export function ActiveWorkoutScreen({ route, navigation }: any) {
   const { activeWorkout, setActiveWorkout, addWorkout } = useStore();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exercises, setExercises] = useState<Exercise[]>(FALLBACK_EXERCISES);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [muscleFilter, setMuscleFilter] = useState('All');
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Fetch exercises from API, fall back to built-in list
   useEffect(() => {
-    const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
-    return () => clearInterval(interval);
+    api.getExercises().then((apiExercises) => {
+      if (apiExercises && apiExercises.length > 0) {
+        setExercises(apiExercises);
+      }
+    }).catch(() => {});
   }, []);
 
+  // Timer only runs when there are exercises
   useEffect(() => {
-    api.getExercises().then(setExercises).catch(() => {});
-  }, []);
+    if (timerRunning) {
+      timerRef.current = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [timerRunning]);
+
+  // Start timer when first exercise is added
+  useEffect(() => {
+    if (activeWorkout && activeWorkout.exercises.length > 0 && !timerRunning) {
+      setTimerRunning(true);
+    }
+  }, [activeWorkout?.exercises.length]);
 
   if (!activeWorkout) {
     return (
@@ -41,6 +98,28 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
     const s = seconds % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
+
+  const matchesMuscleFilter = (ex: Exercise) => {
+    if (muscleFilter === 'All') return true;
+    const muscle = ex.primaryMuscle.toLowerCase();
+    switch (muscleFilter) {
+      case 'Chest': return muscle === 'chest';
+      case 'Back': return ['back', 'lats', 'lower_back', 'traps'].includes(muscle);
+      case 'Shoulders': return muscle === 'shoulders';
+      case 'Arms': return ['biceps', 'triceps', 'forearms'].includes(muscle);
+      case 'Legs': return ['quads', 'hamstrings', 'glutes', 'calves', 'hip_flexors', 'adductors', 'abductors'].includes(muscle);
+      case 'Core': return ['abs', 'obliques'].includes(muscle);
+      default: return true;
+    }
+  };
+
+  const filteredExercises = exercises.filter((ex) => {
+    const matchesSearch = !searchQuery ||
+      ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ex.primaryMuscle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ex.equipment.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch && matchesMuscleFilter(ex);
+  });
 
   const addExercise = (exercise: Exercise) => {
     const newExercise: WorkoutExercise = {
@@ -63,6 +142,8 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
       exercises: [...activeWorkout.exercises, newExercise],
     });
     setShowExercisePicker(false);
+    setSearchQuery('');
+    setMuscleFilter('All');
   };
 
   const addSet = (exerciseIndex: number) => {
@@ -113,6 +194,12 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
     setActiveWorkout(updated);
   };
 
+  const removeExercise = (exerciseIndex: number) => {
+    const updated = { ...activeWorkout };
+    updated.exercises = activeWorkout.exercises.filter((_, i) => i !== exerciseIndex);
+    setActiveWorkout(updated);
+  };
+
   const finishWorkout = async () => {
     const completed = {
       ...activeWorkout,
@@ -156,12 +243,22 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
         <View style={styles.timerCenter}>
-          <Text style={styles.timer}>{formatTime(elapsedSeconds)}</Text>
-          <Text style={styles.setsCount}>
-            {completedSets}/{totalSets} sets
-          </Text>
+          {activeWorkout.exercises.length > 0 ? (
+            <>
+              <Text style={styles.timer}>{formatTime(elapsedSeconds)}</Text>
+              <Text style={styles.setsCount}>
+                {completedSets}/{totalSets} sets
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.readyText}>Add an exercise to begin</Text>
+          )}
         </View>
-        <TouchableOpacity style={styles.finishBtn} onPress={finishWorkout}>
+        <TouchableOpacity
+          style={[styles.finishBtn, activeWorkout.exercises.length === 0 && { opacity: 0.4 }]}
+          onPress={finishWorkout}
+          disabled={activeWorkout.exercises.length === 0}
+        >
           <Text style={styles.finishText}>Finish</Text>
         </TouchableOpacity>
       </View>
@@ -169,17 +266,24 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
       <ScrollView style={styles.exerciseList}>
         {activeWorkout.exercises.map((exercise, exIdx) => (
           <View key={exercise.id} style={styles.exerciseCard}>
-            <Text style={styles.exerciseName}>{exercise.exercise.name}</Text>
-            <Text style={styles.muscleGroup}>
-              {exercise.exercise.primaryMuscle} · {exercise.exercise.equipment}
-            </Text>
+            <View style={styles.exerciseHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.exerciseName}>{exercise.exercise.name}</Text>
+                <Text style={styles.muscleGroup}>
+                  {exercise.exercise.primaryMuscle} · {exercise.exercise.equipment}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => removeExercise(exIdx)}>
+                <Text style={styles.removeExText}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Set Headers */}
             <View style={styles.setHeader}>
               <Text style={[styles.setHeaderText, { width: 40 }]}>Set</Text>
               <Text style={[styles.setHeaderText, { flex: 1 }]}>Weight (kg)</Text>
               <Text style={[styles.setHeaderText, { flex: 1 }]}>Reps</Text>
-              <Text style={[styles.setHeaderText, { width: 40 }]}>✓</Text>
+              <Text style={[styles.setHeaderText, { width: 40 }]}></Text>
             </View>
 
             {/* Sets */}
@@ -227,27 +331,61 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
           <Text style={styles.addExerciseText}>+ Add Exercise</Text>
         </TouchableOpacity>
 
-        {/* Simple Exercise Picker */}
+        {/* Exercise Picker */}
         {showExercisePicker && (
           <View style={styles.picker}>
             <Text style={styles.pickerTitle}>Select Exercise</Text>
-            <ScrollView style={styles.pickerList}>
-              {exercises.map((ex) => (
+
+            {/* Search */}
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search exercises..."
+              placeholderTextColor={colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus
+            />
+
+            {/* Muscle Filter */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
+              {MUSCLE_FILTERS.map((filter) => (
                 <TouchableOpacity
-                  key={ex.id}
-                  style={styles.pickerItem}
-                  onPress={() => addExercise(ex)}
+                  key={filter}
+                  style={[styles.filterChip, muscleFilter === filter && styles.filterChipActive]}
+                  onPress={() => setMuscleFilter(filter)}
                 >
-                  <Text style={styles.pickerItemName}>{ex.name}</Text>
-                  <Text style={styles.pickerItemMeta}>
-                    {ex.primaryMuscle} · {ex.equipment}
+                  <Text style={[styles.filterText, muscleFilter === filter && styles.filterTextActive]}>
+                    {filter}
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
+
+            <ScrollView style={styles.pickerList}>
+              {filteredExercises.length === 0 ? (
+                <Text style={styles.noResults}>No exercises found</Text>
+              ) : (
+                filteredExercises.map((ex) => (
+                  <TouchableOpacity
+                    key={ex.id}
+                    style={styles.pickerItem}
+                    onPress={() => addExercise(ex)}
+                  >
+                    <Text style={styles.pickerItemName}>{ex.name}</Text>
+                    <Text style={styles.pickerItemMeta}>
+                      {ex.primaryMuscle} · {ex.equipment}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
             <TouchableOpacity
               style={styles.pickerClose}
-              onPress={() => setShowExercisePicker(false)}
+              onPress={() => {
+                setShowExercisePicker(false);
+                setSearchQuery('');
+                setMuscleFilter('All');
+              }}
             >
               <Text style={styles.cancelText}>Close</Text>
             </TouchableOpacity>
@@ -273,6 +411,7 @@ const styles = StyleSheet.create({
   cancelText: { ...typography.body, color: colors.danger },
   timerCenter: { alignItems: 'center' },
   timer: { ...typography.h1, color: colors.text },
+  readyText: { ...typography.body, color: colors.textSecondary },
   setsCount: { ...typography.caption, color: colors.textSecondary },
   finishBtn: {
     backgroundColor: colors.success,
@@ -288,8 +427,10 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
+  exerciseHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
   exerciseName: { ...typography.h3, color: colors.text },
-  muscleGroup: { ...typography.caption, color: colors.accent, marginTop: 2, marginBottom: 12 },
+  muscleGroup: { ...typography.caption, color: colors.accent, marginTop: 2 },
+  removeExText: { ...typography.body, color: colors.danger, padding: 4 },
   setHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -354,7 +495,31 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   pickerTitle: { ...typography.h3, color: colors.text, marginBottom: 12 },
+  searchInput: {
+    backgroundColor: colors.inputBg,
+    borderRadius: 12,
+    padding: 12,
+    color: colors.text,
+    ...typography.body,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 12,
+  },
+  filterRow: { flexDirection: 'row', marginBottom: 12, maxHeight: 36 },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: colors.inputBg,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterChipActive: { backgroundColor: colors.accent + '22', borderColor: colors.accent },
+  filterText: { ...typography.caption, color: colors.textSecondary },
+  filterTextActive: { color: colors.accent, fontWeight: '600' },
   pickerList: { maxHeight: 300 },
+  noResults: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingVertical: 20 },
   pickerItem: {
     paddingVertical: 10,
     borderBottomWidth: 1,

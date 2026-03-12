@@ -68,7 +68,8 @@ export interface FitnessGoal {
   targetDate?: string;
   status: GoalStatus;
   createdAt: string;
-  // For physique goals - reference image
+  // For physique goals - progress photos
+  currentPhotoUri?: string;
   goalImageUri?: string;
   // For strength goals
   exercise?: string;
