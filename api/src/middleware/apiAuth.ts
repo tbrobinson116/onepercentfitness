@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, Router } from 'express';
 
 /**
  * API Key authentication middleware for external/third-party access.
@@ -116,7 +116,6 @@ export function apiKeyAuth(req: Request, res: Response, next: NextFunction): voi
 // --- API Key Management Routes ---
 
 export function getApiKeyRoutes() {
-  const { Router } = require('express');
   const router = Router();
 
   // Create a new API key

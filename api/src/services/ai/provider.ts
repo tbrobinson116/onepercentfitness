@@ -17,8 +17,9 @@ export interface AIProviderClient {
 
 export function getDefaultProvider(): AIProvider {
   const env = process.env.AI_PROVIDER as AIProvider | undefined;
-  if (env === 'openai' || env === 'anthropic') return env;
+  if (env === 'openai' || env === 'anthropic' || env === 'grok') return env;
   if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
   if (process.env.OPENAI_API_KEY) return 'openai';
+  if (process.env.XAI_API_KEY) return 'grok';
   return 'anthropic';
 }

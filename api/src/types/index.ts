@@ -241,4 +241,4 @@ export interface MealPlanDay {
   totals: MacroTotals;
 }
 
-export type AIProvider = 'anthropic' | 'openai';
+export type AIProvider = 'anthropic' | 'openai' | 'grok';
