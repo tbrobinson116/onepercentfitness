@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import { generateWorkoutProgram } from '../services/workout-generator.js';
+import { generateLocalProgram } from '../services/local-program-generator.js';
 import type { Workout, WorkoutProgram } from '../types/index.js';
 
 const router = Router();
@@ -49,7 +50,17 @@ const generateProgramSchema = z.object({
 router.post('/programs/generate', async (req, res) => {
   try {
     const input = generateProgramSchema.parse(req.body);
-    const program = await generateWorkoutProgram(input as Parameters<typeof generateWorkoutProgram>[0]);
+    let program: WorkoutProgram;
+
+    try {
+      // Try AI generation first
+      program = await generateWorkoutProgram(input as Parameters<typeof generateWorkoutProgram>[0]);
+    } catch (aiError) {
+      // Fall back to local smart generator
+      console.log('AI unavailable, using local program generator');
+      program = generateLocalProgram(input as Parameters<typeof generateLocalProgram>[0]);
+    }
+
     programs.set(program.id, program);
     res.json(program);
   } catch (error) {
