@@ -2,9 +2,11 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import { Text, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors } from '../theme';
+import { useStore } from '../services/store';
 
+import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { WorkoutsScreen } from '../screens/WorkoutsScreen';
@@ -60,18 +62,61 @@ function MainTabs() {
   );
 }
 
+function LoadingScreen() {
+  return (
+    <View style={loadStyles.container}>
+      <Text style={loadStyles.logo}>1%</Text>
+      <Text style={loadStyles.name}>One Percent Fitness</Text>
+      <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} />
+    </View>
+  );
+}
+
+const loadStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logo: {
+    fontSize: 64,
+    fontWeight: '800',
+    color: colors.accent,
+    marginBottom: 8,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+});
+
 export function AppNavigator() {
+  const isOnboarded = useStore((s) => s.isOnboarded);
+  const hasHydrated = useStore((s) => s._hasHydrated);
+
+  if (!hasHydrated) {
+    return <LoadingScreen />;
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="MainTabs" component={MainTabs} />
-        <Stack.Screen
-          name="ActiveWorkout"
-          component={ActiveWorkoutScreen}
-          options={{ gestureEnabled: false }}
-        />
-        <Stack.Screen name="GenerateProgram" component={GenerateProgramScreen} />
-        <Stack.Screen name="FridgeManager" component={FridgeManagerScreen} />
+        {!isOnboarded ? (
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        ) : (
+          <>
+            <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen
+              name="ActiveWorkout"
+              component={ActiveWorkoutScreen}
+              options={{ gestureEnabled: false }}
+            />
+            <Stack.Screen name="GenerateProgram" component={GenerateProgramScreen} />
+            <Stack.Screen name="FridgeManager" component={FridgeManagerScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

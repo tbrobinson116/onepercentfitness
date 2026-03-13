@@ -11,8 +11,26 @@ import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography } from '../theme';
 
+// Get day of week index (0 = Monday)
+function getDayOfWeek(date: Date): number {
+  return (date.getDay() + 6) % 7;
+}
+
+// Get the last 7 days as date strings
+function getLast7Days(): string[] {
+  const days: string[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().split('T')[0]);
+  }
+  return days;
+}
+
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
 export function HomeScreen({ navigation }: any) {
-  const { goals, workouts, todayNutrition, macroTargets, profile } = useStore();
+  const { goals, workouts, workoutHistory, todayNutrition, macroTargets, profile, onboardingData } = useStore();
   const [refreshing, setRefreshing] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
@@ -23,6 +41,40 @@ export function HomeScreen({ navigation }: any) {
   const proteinConsumed = todayNutrition?.totals.proteinG ?? 0;
   const calorieTarget = macroTargets.calories;
   const proteinTarget = macroTargets.proteinG;
+
+  // Weekly streak calculation
+  const last7 = getLast7Days();
+  const allWorkouts = [...workouts, ...workoutHistory];
+  const workoutDays = new Set(allWorkouts.filter((w) => w.isCompleted).map((w) => w.date));
+  const thisWeekCount = last7.filter((d) => workoutDays.has(d)).length;
+
+  // Calculate current streak
+  let streak = 0;
+  const streakDate = new Date();
+  while (true) {
+    const dateStr = streakDate.toISOString().split('T')[0];
+    // Check if any workout completed on this day
+    if (workoutDays.has(dateStr)) {
+      streak++;
+      streakDate.setDate(streakDate.getDate() - 1);
+    } else if (dateStr === today) {
+      // Today doesn't count against streak if not done yet
+      streakDate.setDate(streakDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+
+  // Total volume this week (sets * reps * weight)
+  const weeklyVolume = allWorkouts
+    .filter((w) => w.isCompleted && last7.includes(w.date))
+    .reduce((total, w) =>
+      total + w.exercises.reduce((exTotal, ex) =>
+        exTotal + ex.sets.filter((s) => s.completed).reduce((setTotal, s) =>
+          setTotal + (s.reps ?? 0) * (s.weight ?? 0), 0
+        ), 0
+      ), 0
+    );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -45,6 +97,16 @@ export function HomeScreen({ navigation }: any) {
     onRefresh();
   }, []);
 
+  const userName = profile?.name || onboardingData?.fitnessGoal ? '' : '';
+  const greeting = getGreeting();
+
+  function getGreeting(): string {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
   return (
     <ScrollView
       style={styles.container}
@@ -53,14 +115,54 @@ export function HomeScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.greeting}>
-          Welcome back{profile?.name ? `, ${profile.name}` : ''}
+          {greeting}{profile?.name ? `, ${profile.name}` : ''}
         </Text>
         <Text style={styles.subtitle}>1% better every day</Text>
       </View>
 
+      {/* Weekly Streak */}
+      <View style={styles.card}>
+        <View style={styles.streakHeader}>
+          <View>
+            <Text style={styles.cardTitle}>This Week</Text>
+            <Text style={styles.streakCount}>
+              {thisWeekCount} workout{thisWeekCount !== 1 ? 's' : ''}
+              {streak > 1 ? ` · ${streak} day streak` : ''}
+            </Text>
+          </View>
+          {weeklyVolume > 0 && (
+            <View style={styles.volumeBadge}>
+              <Text style={styles.volumeValue}>{(weeklyVolume / 1000).toFixed(1)}k</Text>
+              <Text style={styles.volumeLabel}>lbs vol</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.weekDots}>
+          {last7.map((date, i) => {
+            const isToday = date === today;
+            const didWorkout = workoutDays.has(date);
+            const dayIndex = getDayOfWeek(new Date(date + 'T12:00:00'));
+            return (
+              <View key={date} style={styles.dayColumn}>
+                <Text style={[styles.dayLabel, isToday && styles.dayLabelToday]}>
+                  {DAY_LABELS[dayIndex]}
+                </Text>
+                <View style={[
+                  styles.dayDot,
+                  didWorkout && styles.dayDotActive,
+                  isToday && !didWorkout && styles.dayDotToday,
+                ]}>
+                  {didWorkout && <Text style={styles.dayCheck}>✓</Text>}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
       {/* Today's Progress */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Today's Progress</Text>
+        <Text style={styles.cardTitle}>Today's Nutrition</Text>
         <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{caloriesConsumed}</Text>
@@ -101,7 +203,7 @@ export function HomeScreen({ navigation }: any) {
             <Text style={styles.workoutName}>{todayWorkout.name}</Text>
             <Text style={styles.workoutDetail}>
               {todayWorkout.exercises.length} exercises
-              {todayWorkout.isCompleted ? ' - Completed' : ' - Tap to start'}
+              {todayWorkout.isCompleted ? ' — Completed ✓' : ' — Tap to start'}
             </Text>
           </View>
         ) : (
@@ -192,6 +294,45 @@ const styles = StyleSheet.create({
   },
   cardTitle: { ...typography.h3, color: colors.text, marginBottom: 12 },
   seeAll: { ...typography.body, color: colors.accent },
+
+  // Weekly Streak
+  streakHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  streakCount: { ...typography.caption, color: colors.accent, marginTop: -8, marginBottom: 12 },
+  volumeBadge: {
+    backgroundColor: colors.accent + '18',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignItems: 'center',
+  },
+  volumeValue: { ...typography.bodyBold, color: colors.accent },
+  volumeLabel: { ...typography.small, color: colors.textSecondary },
+  weekDots: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  dayColumn: { alignItems: 'center', flex: 1 },
+  dayLabel: { ...typography.small, color: colors.textSecondary, marginBottom: 6 },
+  dayLabelToday: { color: colors.accent, fontWeight: '700' },
+  dayDot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.inputBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  dayDotActive: { backgroundColor: colors.success, borderColor: colors.success },
+  dayDotToday: { borderColor: colors.accent },
+  dayCheck: { color: '#fff', fontWeight: '700', fontSize: 14 },
+
+  // Stats
   statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
   stat: { flex: 1, marginRight: 12 },
   statValue: { ...typography.h2, color: colors.text },
@@ -204,10 +345,12 @@ const styles = StyleSheet.create({
   },
   progressFill: { height: '100%', backgroundColor: colors.accent, borderRadius: 3 },
   proteinFill: { backgroundColor: colors.secondary },
+
   workoutName: { ...typography.h3, color: colors.text },
   workoutDetail: { ...typography.body, color: colors.textSecondary, marginTop: 4 },
   emptyText: { ...typography.body, color: colors.textSecondary },
   actionText: { ...typography.caption, color: colors.accent, marginTop: 4 },
+
   goalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -230,6 +373,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   miniProgressFill: { height: '100%', backgroundColor: colors.accent, borderRadius: 2 },
+
   quickActions: {
     flexDirection: 'row',
     paddingHorizontal: 16,

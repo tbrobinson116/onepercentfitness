@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,14 @@ import {
   TextInput,
   Alert,
   Modal,
+  Vibration,
 } from 'react-native';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography } from '../theme';
 import type { WorkoutExercise, Exercise, ExerciseNote, WeightUnit, CardioEntry, CardioType } from '../types';
 
-// Default starting weights in lbs for intermediate lifters
+// Fallback weights only used if no onboarding estimation exists
 const DEFAULT_WEIGHTS_LBS: Record<string, number> = {
   'Barbell Bench Press': 135, 'Incline Dumbbell Press': 50, 'Dumbbell Bench Press': 50,
   'Decline Barbell Press': 135, 'Cable Flyes': 30, 'Machine Chest Press': 100,
@@ -34,6 +35,25 @@ const DEFAULT_WEIGHTS_LBS: Record<string, number> = {
   'Walking Lunges': 30, 'Lunges': 30,
   'Plank': 0, 'Cable Crunches': 60, 'Hanging Leg Raise': 0,
 };
+
+// Default rest times by exercise type (seconds)
+const REST_TIMES: Record<string, number> = {
+  heavy_compound: 180,  // squat, deadlift, bench
+  light_compound: 120,  // rows, OHP
+  isolation: 90,        // curls, extensions
+  bodyweight: 60,
+};
+
+function getRestTime(exerciseName: string): number {
+  const name = exerciseName.toLowerCase();
+  if (name.includes('squat') || name.includes('deadlift') || name.includes('bench press'))
+    return REST_TIMES.heavy_compound;
+  if (name.includes('row') || name.includes('press') || name.includes('pull'))
+    return REST_TIMES.light_compound;
+  if (name.includes('push-up') || name.includes('pull-up') || name.includes('dip') || name.includes('plank'))
+    return REST_TIMES.bodyweight;
+  return REST_TIMES.isolation;
+}
 
 const MUSCLE_ICONS: Record<string, string> = {
   chest: '🫁', back: '🔙', shoulders: '🦾', biceps: '💪', triceps: '💪',
@@ -120,8 +140,9 @@ function lbsToKg(lbs: number): number {
   return Math.round(lbs * 0.453592 * 10) / 10;
 }
 
-function getDefaultWeight(exerciseName: string, unit: WeightUnit): number {
-  const lbs = DEFAULT_WEIGHTS_LBS[exerciseName] ?? 0;
+function getDefaultWeight(exerciseName: string, unit: WeightUnit, estimated?: Record<string, number>): number {
+  // Use onboarding-estimated weights first, fall back to hardcoded
+  const lbs = estimated?.[exerciseName] ?? DEFAULT_WEIGHTS_LBS[exerciseName] ?? 0;
   if (lbs === 0) return 0;
   return unit === 'lbs' ? lbs : lbsToKg(lbs);
 }
@@ -163,7 +184,7 @@ const FALLBACK_EXERCISES: Exercise[] = [
 const MUSCLE_FILTERS = ['All', 'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core'];
 
 export function ActiveWorkoutScreen({ route, navigation }: any) {
-  const { activeWorkout, setActiveWorkout, addWorkout, weightUnit, setWeightUnit } = useStore();
+  const { activeWorkout, setActiveWorkout, addWorkout, addToHistory, weightUnit, setWeightUnit, estimatedWeights, workoutHistory } = useStore();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
@@ -173,6 +194,11 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
   const [exerciseInfoIdx, setExerciseInfoIdx] = useState<number | null>(null);
   const [noteText, setNoteText] = useState('');
   const [noteExIdx, setNoteExIdx] = useState<number | null>(null);
+  // Rest timer state
+  const [restSeconds, setRestSeconds] = useState(0);
+  const [restTarget, setRestTarget] = useState(0);
+  const [isResting, setIsResting] = useState(false);
+  const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Cardio state
   const [showCardioForm, setShowCardioForm] = useState(false);
   const [cardioType, setCardioType] = useState<CardioType>('treadmill');
@@ -181,6 +207,46 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
   const [cardioIncline, setCardioIncline] = useState('0');
   const [cardioVestWeight, setCardioVestWeight] = useState('0');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Get previous performance for an exercise from history
+  const getPrevPerformance = useCallback((exerciseName: string): { weight: number; reps: number } | null => {
+    for (const w of workoutHistory) {
+      const ex = w.exercises.find((e) => e.exercise.name === exerciseName);
+      if (ex) {
+        const completedSet = ex.sets.find((s) => s.completed && (s.weight ?? 0) > 0);
+        if (completedSet) return { weight: completedSet.weight ?? 0, reps: completedSet.reps ?? 0 };
+      }
+    }
+    return null;
+  }, [workoutHistory]);
+
+  // Start rest timer
+  const startRestTimer = useCallback((exerciseName: string) => {
+    const target = getRestTime(exerciseName);
+    setRestTarget(target);
+    setRestSeconds(target);
+    setIsResting(true);
+    if (restTimerRef.current) clearInterval(restTimerRef.current);
+    restTimerRef.current = setInterval(() => {
+      setRestSeconds((s) => {
+        if (s <= 1) {
+          clearInterval(restTimerRef.current!);
+          restTimerRef.current = null;
+          setIsResting(false);
+          Vibration.vibrate([0, 300, 100, 300]);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+  }, []);
+
+  const skipRest = useCallback(() => {
+    if (restTimerRef.current) clearInterval(restTimerRef.current);
+    restTimerRef.current = null;
+    setIsResting(false);
+    setRestSeconds(0);
+  }, []);
 
   useEffect(() => {
     api.getExercises().then((apiExercises) => {
@@ -242,7 +308,10 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
   });
 
   const addExercise = (exercise: Exercise) => {
-    const defaultWeight = getDefaultWeight(exercise.name, weightUnit);
+    // Use previous performance weight if available, otherwise use estimated/default
+    const prev = getPrevPerformance(exercise.name);
+    const defaultWeight = prev?.weight ?? getDefaultWeight(exercise.name, weightUnit, estimatedWeights);
+    const defaultReps = prev?.reps ?? 10;
     const newExercise: WorkoutExercise = {
       id: Date.now().toString(),
       exerciseId: exercise.id,
@@ -251,7 +320,7 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
         {
           id: `${Date.now()}-0`,
           setNumber: 1,
-          reps: 10,
+          reps: defaultReps,
           weight: defaultWeight,
           completed: false,
         },
@@ -318,12 +387,18 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
     const updated = { ...activeWorkout };
     const ex = { ...updated.exercises[exerciseIndex] };
     const set = { ...ex.sets[setIndex] };
+    const wasCompleted = set.completed;
     set.completed = !set.completed;
     ex.sets = [...ex.sets];
     ex.sets[setIndex] = set;
     updated.exercises = [...updated.exercises];
     updated.exercises[exerciseIndex] = ex;
     setActiveWorkout(updated);
+
+    // Start rest timer when completing a set (not when uncompleting)
+    if (!wasCompleted) {
+      startRestTimer(ex.exercise.name);
+    }
   };
 
   const removeExercise = (exerciseIndex: number) => {
@@ -393,6 +468,10 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
   };
 
   const finishWorkout = async () => {
+    // Clean up rest timer
+    if (restTimerRef.current) clearInterval(restTimerRef.current);
+    setIsResting(false);
+
     const completed = {
       ...activeWorkout,
       isCompleted: true,
@@ -403,6 +482,7 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
       await api.saveWorkout(completed);
     } catch { /* offline */ }
     addWorkout(completed);
+    addToHistory(completed);
     setActiveWorkout(null);
     navigation.goBack();
   };
@@ -468,6 +548,24 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
           <Text style={[styles.unitOption, weightUnit === 'kg' && styles.unitOptionActive]}>KG</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Rest Timer Banner */}
+      {isResting && (
+        <View style={styles.restBanner}>
+          <View style={styles.restProgressBg}>
+            <View style={[styles.restProgressFill, { width: `${(restSeconds / restTarget) * 100}%` }]} />
+          </View>
+          <View style={styles.restContent}>
+            <Text style={styles.restLabel}>Rest</Text>
+            <Text style={styles.restTime}>
+              {Math.floor(restSeconds / 60)}:{(restSeconds % 60).toString().padStart(2, '0')}
+            </Text>
+            <TouchableOpacity style={styles.skipRestBtn} onPress={skipRest}>
+              <Text style={styles.skipRestText}>Skip</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       <ScrollView style={styles.exerciseList} keyboardShouldPersistTaps="handled">
         {/* Cardio Entries */}
@@ -541,6 +639,17 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
                 <Text style={styles.removeExText}>✕</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Previous Performance */}
+            {(() => {
+              const prev = getPrevPerformance(exercise.exercise.name);
+              if (prev) return (
+                <View style={styles.prevPerf}>
+                  <Text style={styles.prevPerfText}>Last: {prev.weight} {weightUnit} x {prev.reps}</Text>
+                </View>
+              );
+              return null;
+            })()}
 
             {/* Set Headers */}
             <View style={styles.setHeader}>
@@ -772,8 +881,8 @@ export function ActiveWorkoutScreen({ route, navigation }: any) {
                         <Text style={styles.pickerItemName}>{ex.name}</Text>
                         <Text style={styles.pickerItemMeta}>
                           {ex.primaryMuscle} · {ex.equipment}
-                          {getDefaultWeight(ex.name, weightUnit) > 0
-                            ? ` · ~${getDefaultWeight(ex.name, weightUnit)} ${weightUnit}`
+                          {getDefaultWeight(ex.name, weightUnit, estimatedWeights) > 0
+                            ? ` · ~${getDefaultWeight(ex.name, weightUnit, estimatedWeights)} ${weightUnit}`
                             : ''}
                         </Text>
                       </View>
@@ -902,6 +1011,46 @@ const styles = StyleSheet.create({
   unitOption: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
   unitOptionActive: { color: colors.accent },
   unitDivider: { ...typography.caption, color: colors.textSecondary, marginHorizontal: 4 },
+  // Rest timer
+  restBanner: {
+    backgroundColor: colors.accent + '22',
+    overflow: 'hidden',
+  },
+  restProgressBg: {
+    height: 4,
+    backgroundColor: colors.border,
+  },
+  restProgressFill: {
+    height: 4,
+    backgroundColor: colors.accent,
+  },
+  restContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+  restLabel: { ...typography.bodyBold, color: colors.accent },
+  restTime: { ...typography.h2, color: colors.text },
+  skipRestBtn: {
+    backgroundColor: colors.cardLight,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
+  skipRestText: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
+  // Previous performance
+  prevPerf: {
+    backgroundColor: colors.accent + '12',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+    alignSelf: 'flex-start',
+  },
+  prevPerfText: { ...typography.caption, color: colors.accent },
   // Exercise list
   exerciseList: { flex: 1, padding: 16 },
   exerciseCard: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12 },

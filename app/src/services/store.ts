@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
   UserProfile,
   BodyMeasurement,
@@ -13,7 +15,37 @@ import type {
   WeightUnit,
 } from '../types';
 
+// --- Onboarding types ---
+export type FitnessGoalType = 'build_muscle' | 'get_stronger' | 'lose_weight' | 'get_lean' | 'improve_endurance' | 'general_fitness';
+export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
+export type SplitPreference = 'ai_decides' | 'full_body' | 'upper_lower' | 'push_pull_legs';
+
+export interface OnboardingData {
+  fitnessGoal: FitnessGoalType | null;
+  gender: 'male' | 'female' | 'other' | null;
+  age: number | null;
+  heightCm: number | null;
+  weightKg: number | null;
+  experience: ExperienceLevel | null;
+  equipment: string[];
+  daysPerWeek: number;
+  sessionMinutes: number;
+  splitPreference: SplitPreference;
+}
+
+export interface EstimatedWeights {
+  [exerciseName: string]: number; // weight in lbs
+}
+
 interface AppState {
+  // Onboarding
+  isOnboarded: boolean;
+  onboardingData: OnboardingData;
+  estimatedWeights: EstimatedWeights;
+  setOnboarded: (v: boolean) => void;
+  setOnboardingData: (data: Partial<OnboardingData>) => void;
+  setEstimatedWeights: (w: EstimatedWeights) => void;
+
   // Profile
   profile: UserProfile | null;
   measurements: BodyMeasurement[];
@@ -55,73 +87,142 @@ interface AppState {
   addFridgeItem: (item: FridgeItem) => void;
   removeFridgeItem: (id: string) => void;
 
+  // Workout history (for progressive overload)
+  workoutHistory: Workout[];
+  addToHistory: (w: Workout) => void;
+  setWorkoutHistory: (w: Workout[]) => void;
+
   // Settings
   weightUnit: WeightUnit;
   setWeightUnit: (unit: WeightUnit) => void;
 
-  // UI State
+  // Hydration
+  _hasHydrated: boolean;
+  setHasHydrated: (v: boolean) => void;
+
+  // UI State (not persisted)
   isLoading: boolean;
   error: string | null;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
 
-export const useStore = create<AppState>((set) => ({
-  // Profile
-  profile: null,
-  measurements: [],
-  bloodWork: [],
-  setProfile: (profile) => set({ profile }),
-  addMeasurement: (m) => set((s) => ({ measurements: [m, ...s.measurements] })),
-  setMeasurements: (measurements) => set({ measurements }),
-  addBloodWork: (b) => set((s) => ({ bloodWork: [b, ...s.bloodWork] })),
-  setBloodWork: (bloodWork) => set({ bloodWork }),
+const DEFAULT_ONBOARDING: OnboardingData = {
+  fitnessGoal: null,
+  gender: null,
+  age: null,
+  heightCm: null,
+  weightKg: null,
+  experience: null,
+  equipment: [],
+  daysPerWeek: 4,
+  sessionMinutes: 60,
+  splitPreference: 'ai_decides',
+};
 
-  // Goals
-  goals: [],
-  setGoals: (goals) => set({ goals }),
-  addGoal: (goal) => set((s) => ({ goals: [...s.goals, goal] })),
-  updateGoal: (id, updates) =>
-    set((s) => ({
-      goals: s.goals.map((g) => (g.id === id ? { ...g, ...updates } : g)),
-    })),
-  removeGoal: (id) => set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
+export const useStore = create<AppState>()(
+  persist(
+    (set) => ({
+      // Onboarding
+      isOnboarded: false,
+      onboardingData: DEFAULT_ONBOARDING,
+      estimatedWeights: {},
+      setOnboarded: (isOnboarded) => set({ isOnboarded }),
+      setOnboardingData: (data) =>
+        set((s) => ({ onboardingData: { ...s.onboardingData, ...data } })),
+      setEstimatedWeights: (estimatedWeights) => set({ estimatedWeights }),
 
-  // Workouts
-  workouts: [],
-  activeWorkout: null,
-  programs: [],
-  setWorkouts: (workouts) => set({ workouts }),
-  addWorkout: (w) => set((s) => ({ workouts: [w, ...s.workouts] })),
-  setActiveWorkout: (activeWorkout) => set({ activeWorkout }),
-  updateActiveWorkout: (updates) =>
-    set((s) => ({
-      activeWorkout: s.activeWorkout ? { ...s.activeWorkout, ...updates } : null,
-    })),
-  setPrograms: (programs) => set({ programs }),
-  addProgram: (p) => set((s) => ({ programs: [p, ...s.programs] })),
+      // Profile
+      profile: null,
+      measurements: [],
+      bloodWork: [],
+      setProfile: (profile) => set({ profile }),
+      addMeasurement: (m) => set((s) => ({ measurements: [m, ...s.measurements] })),
+      setMeasurements: (measurements) => set({ measurements }),
+      addBloodWork: (b) => set((s) => ({ bloodWork: [b, ...s.bloodWork] })),
+      setBloodWork: (bloodWork) => set({ bloodWork }),
 
-  // Nutrition
-  todayNutrition: null,
-  macroTargets: { calories: 2500, proteinG: 180, carbsG: 250, fatG: 80, fiberG: 30 },
-  recipes: [],
-  fridgeItems: [],
-  setTodayNutrition: (todayNutrition) => set({ todayNutrition }),
-  setMacroTargets: (macroTargets) => set({ macroTargets }),
-  setRecipes: (recipes) => set({ recipes }),
-  addRecipe: (r) => set((s) => ({ recipes: [r, ...s.recipes] })),
-  setFridgeItems: (fridgeItems) => set({ fridgeItems }),
-  addFridgeItem: (item) => set((s) => ({ fridgeItems: [...s.fridgeItems, item] })),
-  removeFridgeItem: (id) =>
-    set((s) => ({ fridgeItems: s.fridgeItems.filter((i) => i.id !== id) })),
+      // Goals
+      goals: [],
+      setGoals: (goals) => set({ goals }),
+      addGoal: (goal) => set((s) => ({ goals: [...s.goals, goal] })),
+      updateGoal: (id, updates) =>
+        set((s) => ({
+          goals: s.goals.map((g) => (g.id === id ? { ...g, ...updates } : g)),
+        })),
+      removeGoal: (id) => set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
 
-  // Settings
-  weightUnit: 'lbs' as WeightUnit,
-  setWeightUnit: (weightUnit) => set({ weightUnit }),
+      // Workouts
+      workouts: [],
+      activeWorkout: null,
+      programs: [],
+      setWorkouts: (workouts) => set({ workouts }),
+      addWorkout: (w) => set((s) => ({ workouts: [w, ...s.workouts] })),
+      setActiveWorkout: (activeWorkout) => set({ activeWorkout }),
+      updateActiveWorkout: (updates) =>
+        set((s) => ({
+          activeWorkout: s.activeWorkout ? { ...s.activeWorkout, ...updates } : null,
+        })),
+      setPrograms: (programs) => set({ programs }),
+      addProgram: (p) => set((s) => ({ programs: [p, ...s.programs] })),
 
-  // UI
-  isLoading: false,
-  error: null,
-  setLoading: (isLoading) => set({ isLoading }),
-  setError: (error) => set({ error }),
-}));
+      // Nutrition
+      todayNutrition: null,
+      macroTargets: { calories: 2500, proteinG: 180, carbsG: 250, fatG: 80, fiberG: 30 },
+      recipes: [],
+      fridgeItems: [],
+      setTodayNutrition: (todayNutrition) => set({ todayNutrition }),
+      setMacroTargets: (macroTargets) => set({ macroTargets }),
+      setRecipes: (recipes) => set({ recipes }),
+      addRecipe: (r) => set((s) => ({ recipes: [r, ...s.recipes] })),
+      setFridgeItems: (fridgeItems) => set({ fridgeItems }),
+      addFridgeItem: (item) => set((s) => ({ fridgeItems: [...s.fridgeItems, item] })),
+      removeFridgeItem: (id) =>
+        set((s) => ({ fridgeItems: s.fridgeItems.filter((i) => i.id !== id) })),
+
+      // Workout history
+      workoutHistory: [],
+      addToHistory: (w) =>
+        set((s) => ({ workoutHistory: [w, ...s.workoutHistory].slice(0, 200) })),
+      setWorkoutHistory: (workoutHistory) => set({ workoutHistory }),
+
+      // Settings
+      weightUnit: 'lbs' as WeightUnit,
+      setWeightUnit: (weightUnit) => set({ weightUnit }),
+
+      // Hydration
+      _hasHydrated: false,
+      setHasHydrated: (v) => set({ _hasHydrated: v }),
+
+      // UI
+      isLoading: false,
+      error: null,
+      setLoading: (isLoading) => set({ isLoading }),
+      setError: (error) => set({ error }),
+    }),
+    {
+      name: 'onepercent-fitness-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+      // Don't persist transient UI state
+      partialize: (state) => ({
+        isOnboarded: state.isOnboarded,
+        onboardingData: state.onboardingData,
+        estimatedWeights: state.estimatedWeights,
+        profile: state.profile,
+        measurements: state.measurements,
+        bloodWork: state.bloodWork,
+        goals: state.goals,
+        workouts: state.workouts,
+        programs: state.programs,
+        macroTargets: state.macroTargets,
+        recipes: state.recipes,
+        fridgeItems: state.fridgeItems,
+        workoutHistory: state.workoutHistory,
+        weightUnit: state.weightUnit,
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
+    }
+  )
+);

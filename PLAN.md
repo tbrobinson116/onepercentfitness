@@ -162,6 +162,76 @@ Transform the app from a functional MVP into a polished, retention-driving fitne
 
 ---
 
+## Phase 6: AI Coach Chat
+
+### 6A. In-App AI Chat Screen
+- Conversational interface for on-the-fly adjustments
+- "I'm at a hotel with just dumbbells and a bench" → AI instantly adapts today's workout
+- "My shoulder is bothering me today" → swaps exercises in real-time
+- "What should I eat post-workout?" → personalized nutrition advice
+- Chat history persisted locally, context-aware (knows your goals, recent workouts, measurements)
+
+### 6B. Travel/Adaptive Workouts
+- Quick "I'm traveling" mode that generates bodyweight or hotel-gym workouts
+- Equipment override without changing saved profile
+- One-tap workout adjustment based on available equipment
+
+---
+
+## Phase 7: Periodic Assessments
+
+### 7A. Weekly Check-In (Opt-in)
+- Quick "How did this week feel?" survey after last workout of the week
+- Auto-summary: workouts completed, total volume, PRs hit
+- AI feedback: "Great consistency! Consider adding 5 lbs to your bench next week."
+
+### 7B. Monthly Assessment (Guided)
+- Upload progress photo → side-by-side comparison with last month (before/after slider)
+- Log measurements → auto-comparison with trends
+- Review strength progression per exercise
+- AI comprehensive feedback on progress toward goals
+
+---
+
+## Phase 8: The 1% Leaderboard (Brand Identity)
+
+### 8A. Percentile Rankings
+- Based on real fitness industry data (CDC/ACSM exercise frequency stats):
+  - "You worked out 4x this week — that puts you in the **top 3%** of Americans your age"
+  - "12 consecutive weeks of training — **top 1%** consistency"
+- Focus on **showing up** (motivating), not comparing lifts (intimidating)
+- Demographic-aware: age, gender for accurate percentile
+
+### 8B. Motivation Engine
+- Pre-workout motivational content (opt-in):
+  - Quick video/message popup before starting a workout
+  - Morning motivation push notification
+  - Sourced from curated fitness/motivational content
+- Daily tips that rotate on the home screen
+- PR celebrations with shareable cards
+- Milestone badges (1 month, 100 workouts, etc.)
+
+---
+
+## Implementation Status
+
+### Done ✅
+- [x] Phase 2: Data persistence (AsyncStorage + Zustand persist)
+- [x] Phase 1: Smart onboarding (6-step with weight estimation)
+- [x] Phase 3A: Auto rest timer with haptic feedback
+- [x] Phase 3B: Inline previous performance display
+- [x] Phase 4A: Weekly streak + volume tracking on home screen
+- [x] Workout history tracking for progressive overload
+
+### Next Up
+- [ ] Phase 5: AI goal suggestions
+- [ ] Phase 6: AI coach chat
+- [ ] Phase 7: Periodic assessments
+- [ ] Phase 8: 1% leaderboard
+- [ ] Phase 3E: Component refactor (break up ActiveWorkoutScreen)
+
+---
+
 ## Technical Notes
 
 - All new screens follow existing dark theme from `theme.ts`
