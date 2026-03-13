@@ -10,10 +10,34 @@ import {
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography } from '../theme';
-import type { Workout, WorkoutProgram } from '../types';
+import type { Workout, WorkoutProgram, WeightUnit } from '../types';
+
+// Default starting weights in lbs (same map as ActiveWorkoutScreen)
+const DEFAULT_WEIGHTS_LBS: Record<string, number> = {
+  'Barbell Bench Press': 135, 'Incline Dumbbell Press': 50, 'Dumbbell Bench Press': 50,
+  'Decline Barbell Press': 135, 'Cable Flyes': 30, 'Machine Chest Press': 100,
+  'Barbell Deadlift': 185, 'Deadlift': 185, 'Barbell Bent-Over Row': 115,
+  'Barbell Row': 115, 'Dumbbell Row': 50, 'Seated Cable Row': 100,
+  'T-Bar Row': 90, 'Lat Pulldown': 100, 'Face Pulls': 40,
+  'Overhead Press': 85, 'Barbell Overhead Press': 85, 'Dumbbell Shoulder Press': 40,
+  'Arnold Press': 35, 'Lateral Raises': 15, 'Cable Lateral Raise': 15,
+  'Barbell Curl': 65, 'Dumbbell Curl': 25, 'Hammer Curl': 30,
+  'Tricep Pushdown': 50, 'Skull Crushers': 55, 'Close-Grip Bench Press': 115,
+  'Barbell Squat': 155, 'Barbell Back Squat': 155, 'Front Squat': 115,
+  'Leg Press': 200, 'Romanian Deadlift': 135, 'Bulgarian Split Squat': 30,
+  'Leg Extension': 80, 'Leg Curl': 70, 'Hip Thrust': 135, 'Calf Raises': 100,
+  'Goblet Squat': 40, 'Smith Machine Squat': 115, 'Hack Squat': 140,
+  'Cable Crunches': 60,
+};
+
+function getDefaultWeight(name: string, unit: WeightUnit): number {
+  const lbs = DEFAULT_WEIGHTS_LBS[name] ?? 0;
+  if (lbs === 0) return 0;
+  return unit === 'lbs' ? lbs : Math.round(lbs * 0.453592 * 10) / 10;
+}
 
 export function WorkoutsScreen({ navigation }: any) {
-  const { workouts, programs, setWorkouts, setPrograms, setActiveWorkout } = useStore();
+  const { workouts, programs, setWorkouts, setPrograms, setActiveWorkout, weightUnit } = useStore();
   const [tab, setTab] = useState<'today' | 'history' | 'programs'>('today');
 
   const loadData = useCallback(async () => {
@@ -73,11 +97,12 @@ export function WorkoutsScreen({ navigation }: any) {
           id: `${Date.now()}-${i}-${j}`,
           setNumber: j + 1,
           reps: ex.repsMin,
-          weightKg: 0,
+          weight: getDefaultWeight(ex.exercise.name, weightUnit),
           completed: false,
           restSeconds: ex.restSeconds,
         })),
         notes: ex.notes,
+        exerciseNotes: [],
         order: i,
       })),
       isCompleted: false,

@@ -138,6 +138,21 @@ export interface WorkoutExercise {
   order: number;
 }
 
+export type CardioType = 'treadmill' | 'elliptical' | 'bike' | 'stairmaster' | 'rowing' | 'outdoor_run' | 'outdoor_walk' | 'other';
+
+export interface CardioEntry {
+  id: string;
+  type: CardioType;
+  durationMinutes: number;
+  speedMph?: number;
+  inclinePercent?: number;
+  resistanceLevel?: number;
+  weightedVestLbs?: number;
+  distanceMiles?: number;
+  estimatedCalories: number;
+  notes?: string;
+}
+
 export interface Workout {
   id: string;
   name: string;
@@ -146,6 +161,7 @@ export interface Workout {
   endTime?: string;
   durationMinutes?: number;
   exercises: WorkoutExercise[];
+  cardioEntries?: CardioEntry[];
   notes?: string;
   isCompleted: boolean;
   // AI-generated program reference

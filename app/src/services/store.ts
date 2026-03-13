@@ -10,6 +10,7 @@ import type {
   Recipe,
   FridgeItem,
   MacroTotals,
+  WeightUnit,
 } from '../types';
 
 interface AppState {
@@ -53,6 +54,10 @@ interface AppState {
   setFridgeItems: (items: FridgeItem[]) => void;
   addFridgeItem: (item: FridgeItem) => void;
   removeFridgeItem: (id: string) => void;
+
+  // Settings
+  weightUnit: WeightUnit;
+  setWeightUnit: (unit: WeightUnit) => void;
 
   // UI State
   isLoading: boolean;
@@ -109,6 +114,10 @@ export const useStore = create<AppState>((set) => ({
   addFridgeItem: (item) => set((s) => ({ fridgeItems: [...s.fridgeItems, item] })),
   removeFridgeItem: (id) =>
     set((s) => ({ fridgeItems: s.fridgeItems.filter((i) => i.id !== id) })),
+
+  // Settings
+  weightUnit: 'lbs' as WeightUnit,
+  setWeightUnit: (weightUnit) => set({ weightUnit }),
 
   // UI
   isLoading: false,
