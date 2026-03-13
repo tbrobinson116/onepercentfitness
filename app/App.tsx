@@ -6,8 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { useStore } from './src/services/store';
 
-// TEMPORARY: Force reset to test onboarding — remove after testing
-const FORCE_RESET = true;
+const FORCE_RESET = false;
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
