@@ -105,12 +105,12 @@ export function ProfileScreen({ navigation }: any) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.title}>My Profile</Text>
           <TouchableOpacity
             onPress={() => setTab('settings')}
-            style={{ padding: 8 }}
+            style={{ backgroundColor: colors.accent, borderRadius: 20, width: 40, height: 40, justifyContent: 'center', alignItems: 'center' }}
           >
-            <Text style={{ fontSize: 24 }}>⚙️</Text>
+            <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>S</Text>
           </TouchableOpacity>
         </View>
       </View>
