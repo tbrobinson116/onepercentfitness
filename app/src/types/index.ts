@@ -92,6 +92,10 @@ export interface GoalMilestone {
   achievedDate?: string;
 }
 
+// --- Settings ---
+
+export type WeightUnit = 'lbs' | 'kg';
+
 // --- Workouts & Exercises ---
 
 export type MuscleGroup =
@@ -118,6 +122,7 @@ export interface WorkoutSet {
   id: string;
   setNumber: number;
   reps?: number;
+  weight?: number;
   weightKg?: number;
   durationSeconds?: number;
   distanceMeters?: number;
@@ -129,12 +134,19 @@ export interface WorkoutSet {
   restSeconds?: number;
 }
 
+export interface ExerciseNote {
+  id: string;
+  text: string;
+  timestamp: string;
+}
+
 export interface WorkoutExercise {
   id: string;
   exerciseId: string;
   exercise: Exercise;
   sets: WorkoutSet[];
   notes?: string;
+  exerciseNotes?: ExerciseNote[];
   order: number;
 }
 
