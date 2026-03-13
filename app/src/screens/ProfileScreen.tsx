@@ -9,6 +9,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography } from '../theme';
@@ -287,6 +288,32 @@ export function ProfileScreen({ navigation }: any) {
                   if (profile) setProfile({ ...profile, heightCm: Number(v) || 0 });
                 }}
               />
+            </View>
+
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Data</Text>
+              <TouchableOpacity
+                style={{ backgroundColor: colors.danger, borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 8 }}
+                onPress={() => {
+                  Alert.alert(
+                    'Reset App',
+                    'This will clear all data and restart onboarding. Are you sure?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Reset Everything',
+                        style: 'destructive',
+                        onPress: async () => {
+                          await AsyncStorage.clear();
+                          useStore.getState().setOnboarded(false);
+                        },
+                      },
+                    ]
+                  );
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Reset App & Re-run Onboarding</Text>
+              </TouchableOpacity>
             </View>
           </>
         )}
