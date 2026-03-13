@@ -104,7 +104,15 @@ export function ProfileScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={styles.title}>Profile</Text>
+          <TouchableOpacity
+            onPress={() => setTab('settings')}
+            style={{ padding: 8 }}
+          >
+            <Text style={{ fontSize: 24 }}>⚙️</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Tabs */}
@@ -518,11 +526,19 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { padding: 24, paddingTop: 60 },
   title: { ...typography.h1, color: colors.text },
-  tabs: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 8, flexWrap: 'wrap' },
-  tab: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, marginRight: 6, marginBottom: 4 },
-  activeTab: { backgroundColor: colors.accent },
-  tabText: { ...typography.caption, color: colors.textSecondary },
-  activeTabText: { color: colors.text, fontWeight: '600' },
+  tabs: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 12, gap: 8 },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: colors.inputBg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  activeTab: { backgroundColor: colors.accent, borderColor: colors.accent },
+  tabText: { ...typography.caption, color: colors.textSecondary, fontWeight: '500' },
+  activeTabText: { color: '#fff', fontWeight: '700' },
   content: { flex: 1, paddingHorizontal: 16 },
   card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12 },
   cardTitle: { ...typography.h3, color: colors.text, marginBottom: 12 },
