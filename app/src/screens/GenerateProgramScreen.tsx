@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
-import { PressableScale, Card, ChipSelector } from '../components/ui';
+import { PressableScale, Card, ChipSelector, FadeInView } from '../components/ui';
 import type { Equipment } from '../types';
 
 const EQUIPMENT_OPTIONS: { id: Equipment; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -118,7 +118,7 @@ export function GenerateProgramScreen({ navigation }: any) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         {/* Header */}
-        <View style={styles.header}>
+        <FadeInView delay={0} style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -131,10 +131,10 @@ export function GenerateProgramScreen({ navigation }: any) {
               Tell me about your setup and I'll design your perfect program.
             </Text>
           </View>
-        </View>
+        </FadeInView>
 
         {/* AI Coach Bubble */}
-        <View style={styles.coachBubble}>
+        <FadeInView delay={100} style={styles.coachBubble}>
           <View style={styles.coachHeader}>
             <Ionicons name="sparkles" size={14} color={colors.accent} />
             <Text style={styles.coachLabel}>Coach</Text>
@@ -142,10 +142,10 @@ export function GenerateProgramScreen({ navigation }: any) {
           <Text style={styles.coachText}>
             Let's build your program. I'll need to know your experience, schedule, and equipment.
           </Text>
-        </View>
+        </FadeInView>
 
         {/* Experience Level */}
-        <View>
+        <FadeInView delay={200}>
           <Text style={styles.label}>
             <Ionicons name="trending-up" size={14} color={colors.accent} /> Experience Level
           </Text>
@@ -171,10 +171,10 @@ export function GenerateProgramScreen({ navigation }: any) {
               </PressableScale>
             ))}
           </View>
-        </View>
+        </FadeInView>
 
         {/* Days per Week */}
-        <View>
+        <FadeInView delay={300}>
           <Text style={styles.label}>
             <Ionicons name="calendar-outline" size={14} color={colors.accent} /> Days per Week
           </Text>
@@ -189,10 +189,10 @@ export function GenerateProgramScreen({ navigation }: any) {
               </PressableScale>
             ))}
           </View>
-        </View>
+        </FadeInView>
 
         {/* Duration */}
-        <View>
+        <FadeInView delay={400}>
           <Text style={styles.label}>
             <Ionicons name="time-outline" size={14} color={colors.accent} /> Session Duration
           </Text>
@@ -207,10 +207,10 @@ export function GenerateProgramScreen({ navigation }: any) {
               </PressableScale>
             ))}
           </View>
-        </View>
+        </FadeInView>
 
         {/* Equipment */}
-        <View>
+        <FadeInView delay={500}>
           <Text style={styles.label}>
             <Ionicons name="construct-outline" size={14} color={colors.accent} /> Equipment
           </Text>
@@ -291,10 +291,10 @@ export function GenerateProgramScreen({ navigation }: any) {
               ))}
             </View>
           )}
-        </View>
+        </FadeInView>
 
         {/* Injuries */}
-        <View>
+        <FadeInView delay={600}>
           <Text style={styles.label}>
             <Ionicons name="medical-outline" size={14} color={colors.accent} /> Injuries / Limitations
           </Text>
@@ -305,10 +305,10 @@ export function GenerateProgramScreen({ navigation }: any) {
             value={injuries}
             onChangeText={setInjuries}
           />
-        </View>
+        </FadeInView>
 
         {/* Preferences */}
-        <View>
+        <FadeInView delay={700}>
           <Text style={styles.label}>
             <Ionicons name="chatbubble-outline" size={14} color={colors.accent} /> Preferences
           </Text>
@@ -320,11 +320,11 @@ export function GenerateProgramScreen({ navigation }: any) {
             onChangeText={setPreferences}
             multiline
           />
-        </View>
+        </FadeInView>
 
         {/* Active Goals */}
         {activeGoals.length > 0 && (
-          <View style={styles.goalsCard}>
+          <FadeInView delay={800} style={styles.goalsCard}>
             <View style={styles.goalsHeader}>
               <Ionicons name="trophy-outline" size={16} color={colors.accent} />
               <Text style={styles.goalsTitle}>Your Active Goals</Text>
@@ -336,11 +336,11 @@ export function GenerateProgramScreen({ navigation }: any) {
               </View>
             ))}
             <Text style={styles.goalsNote}>These will be factored into your program.</Text>
-          </View>
+          </FadeInView>
         )}
 
         {/* Generate Button */}
-        <View>
+        <FadeInView delay={900}>
           <PressableScale
             onPress={generate}
             disabled={loading}
@@ -358,7 +358,7 @@ export function GenerateProgramScreen({ navigation }: any) {
               </View>
             )}
           </PressableScale>
-        </View>
+        </FadeInView>
       </ScrollView>
     </KeyboardAvoidingView>
   );

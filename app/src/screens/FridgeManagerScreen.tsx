@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
-import { PressableScale, Card, EmptyState } from '../components/ui';
+import { PressableScale, Card, EmptyState, FadeInView } from '../components/ui';
 import type { FridgeItem } from '../types';
 
 const CATEGORIES = ['protein', 'dairy', 'vegetable', 'fruit', 'grain', 'condiment', 'other'] as const;
@@ -100,7 +100,7 @@ export function FridgeManagerScreen({ navigation }: any) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 60 }}>
       {/* Header */}
-      <View style={styles.header}>
+      <FadeInView delay={0} style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
@@ -108,10 +108,10 @@ export function FridgeManagerScreen({ navigation }: any) {
           <Ionicons name="snow-outline" size={24} color={colors.accent} />
           <Text style={styles.title}>My Fridge</Text>
         </View>
-      </View>
+      </FadeInView>
 
       {/* Add Item */}
-      <View style={styles.addSection}>
+      <FadeInView delay={100} style={styles.addSection}>
         <TextInput
           style={styles.nameInput}
           placeholder="Add item (e.g., chicken breast)"
@@ -162,10 +162,10 @@ export function FridgeManagerScreen({ navigation }: any) {
             </TouchableOpacity>
           ))}
         </ScrollView>
-      </View>
+      </FadeInView>
 
       {/* Generate Recipe Button */}
-      <View>
+      <FadeInView delay={200}>
         <PressableScale
           onPress={generateRecipe}
           disabled={generatingRecipe}
@@ -185,7 +185,7 @@ export function FridgeManagerScreen({ navigation }: any) {
             </>
           )}
         </PressableScale>
-      </View>
+      </FadeInView>
 
       {/* Fridge Contents */}
       {fridgeItems.length === 0 ? (
@@ -196,8 +196,9 @@ export function FridgeManagerScreen({ navigation }: any) {
         />
       ) : (
         grouped.map((group, i) => (
-          <View
+          <FadeInView
             key={group.category}
+            delay={300 + i * 100}
             style={styles.groupCard}
           >
             <View style={styles.groupHeader}>
@@ -222,7 +223,7 @@ export function FridgeManagerScreen({ navigation }: any) {
                 </TouchableOpacity>
               </View>
             ))}
-          </View>
+          </FadeInView>
         ))
       )}
     </ScrollView>

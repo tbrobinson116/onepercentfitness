@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
-import { Card, PressableScale, MacroRing, SectionHeader, EmptyState } from '../components/ui';
+import { Card, PressableScale, MacroRing, SectionHeader, EmptyState, FadeInView } from '../components/ui';
 import type { Meal, FoodEntry, MacroTotals, MealType } from '../types';
 
 const MEAL_TYPES: { type: MealType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -196,7 +196,7 @@ export function NutritionScreen({ navigation }: any) {
         {tab === 'today' && (
           <>
             {/* Macro Summary Rings */}
-            <View>
+            <FadeInView delay={50}>
               <Card style={styles.macroCard}>
                 <View style={styles.macroRingRow}>
                   <MacroRing
@@ -233,7 +233,7 @@ export function NutritionScreen({ navigation }: any) {
                   />
                 </View>
               </Card>
-            </View>
+            </FadeInView>
 
             {/* Meal Sections */}
             <SectionHeader title="MEALS" />
@@ -242,8 +242,9 @@ export function NutritionScreen({ navigation }: any) {
               const meal = meals.find((m) => m.type === mealType.type);
               const hasFoods = meal && meal.foods.length > 0;
               return (
-                <View
+                <FadeInView
                   key={mealType.type}
+                  delay={100 + index * 60}
                 >
                   <Card style={hasFoods ? styles.mealCard : styles.mealCardEmpty}>
                     <View style={styles.mealHeader}>
@@ -291,7 +292,7 @@ export function NutritionScreen({ navigation }: any) {
                       <Text style={styles.mealSuggestionText}>Tap + to log your {mealType.label.toLowerCase()}</Text>
                     )}
                   </Card>
-                </View>
+                </FadeInView>
               );
             })}
           </>
@@ -300,7 +301,7 @@ export function NutritionScreen({ navigation }: any) {
         {tab === 'recipes' && (
           <>
             {/* Generate Recipe CTA */}
-            <View>
+            <FadeInView delay={50}>
               <Card
                 style={styles.generateCard}
                 onPress={() => navigation.navigate('FridgeManager')}
@@ -313,7 +314,7 @@ export function NutritionScreen({ navigation }: any) {
                   Tell us what's in your fridge and AI will create a macro-optimized recipe
                 </Text>
               </Card>
-            </View>
+            </FadeInView>
 
             {recipes.length === 0 ? (
               <EmptyState
@@ -325,8 +326,9 @@ export function NutritionScreen({ navigation }: any) {
               <>
                 <SectionHeader title="YOUR RECIPES" />
                 {recipes.map((recipe, index) => (
-                  <View
+                  <FadeInView
                     key={recipe.id}
+                    delay={100 + index * 60}
                   >
                     <Card
                       onPress={() => navigation.navigate('RecipeDetail', { recipeId: recipe.id })}
@@ -372,7 +374,7 @@ export function NutritionScreen({ navigation }: any) {
                         </View>
                       )}
                     </Card>
-                  </View>
+                  </FadeInView>
                 ))}
               </>
             )}
@@ -381,7 +383,7 @@ export function NutritionScreen({ navigation }: any) {
 
         {tab === 'fridge' && (
           <>
-            <View>
+            <FadeInView delay={50}>
               <PressableScale
                 onPress={() => navigation.navigate('FridgeManager')}
                 style={styles.manageFridgeBtn}
@@ -390,7 +392,7 @@ export function NutritionScreen({ navigation }: any) {
                 <Text style={styles.manageFridgeText}>Manage Fridge Items</Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </PressableScale>
-            </View>
+            </FadeInView>
 
             {fridgeItems.length === 0 ? (
               <EmptyState
@@ -404,8 +406,9 @@ export function NutritionScreen({ navigation }: any) {
               <>
                 <SectionHeader title={`${fridgeItems.length} ITEMS`} />
                 {fridgeItems.map((item, index) => (
-                  <View
+                  <FadeInView
                     key={item.id}
+                    delay={80 + index * 40}
                   >
                     <Card style={styles.fridgeItem}>
                       <View style={styles.fridgeItemLeft}>
@@ -418,7 +421,7 @@ export function NutritionScreen({ navigation }: any) {
                         </Text>
                       ) : null}
                     </Card>
-                  </View>
+                  </FadeInView>
                 ))}
               </>
             )}

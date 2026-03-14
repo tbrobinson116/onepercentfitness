@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../services/store';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
-import { Card, SectionHeader, EmptyState } from '../components/ui';
+import { Card, SectionHeader, EmptyState, FadeInView } from '../components/ui';
 import type { Workout, MuscleGroup } from '../types';
 
 // Enable LayoutAnimation on Android
@@ -336,18 +336,18 @@ export function WorkoutAnalyticsScreen({ navigation }: any) {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={styles.header}>
+      <FadeInView delay={0} style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Workout Analytics</Text>
         <View style={{ width: 40 }} />
-      </View>
+      </FadeInView>
 
       {/* Summary Stats */}
       <View style={styles.sectionPadding}>
         <SectionHeader title="SUMMARY" />
-        <View style={styles.statsGrid}>
+        <FadeInView delay={100} style={styles.statsGrid}>
           <StatCard
             icon="barbell-outline"
             label="Total Workouts"
@@ -375,7 +375,7 @@ export function WorkoutAnalyticsScreen({ navigation }: any) {
             suffix="avg"
             color={colors.warning}
           />
-        </View>
+        </FadeInView>
       </View>
 
       {/* Muscle Group Frequency */}
@@ -384,8 +384,9 @@ export function WorkoutAnalyticsScreen({ navigation }: any) {
           <SectionHeader title="MUSCLE GROUP FREQUENCY" />
           <Card>
             {muscleFrequency.map(([muscle, count], index) => (
-              <View
+              <FadeInView
                 key={muscle}
+                delay={250 + index * 50}
                 style={styles.barRow}
               >
                 <Text style={styles.barLabel}>{formatMuscleGroup(muscle)}</Text>
@@ -401,7 +402,7 @@ export function WorkoutAnalyticsScreen({ navigation }: any) {
                   />
                 </View>
                 <Text style={styles.barCount}>{count}</Text>
-              </View>
+              </FadeInView>
             ))}
           </Card>
         </View>
