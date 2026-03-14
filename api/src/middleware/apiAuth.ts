@@ -159,7 +159,7 @@ export function getApiKeyRoutes() {
 
   // Revoke a key
   router.delete('/keys/:keyPrefix', (req: Request, res: Response) => {
-    const prefix = req.params.keyPrefix;
+    const prefix = req.params.keyPrefix as string;
     for (const [key, record] of apiKeys.entries()) {
       if (key.startsWith(prefix)) {
         record.isActive = false;

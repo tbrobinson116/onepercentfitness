@@ -67,7 +67,7 @@ export interface FitnessGoal {
 export type MuscleGroup =
   | 'chest' | 'back' | 'shoulders' | 'biceps' | 'triceps'
   | 'forearms' | 'abs' | 'quads' | 'hamstrings' | 'glutes'
-  | 'calves' | 'traps' | 'lats' | 'lower_back' | 'full_body' | 'cardio';
+  | 'calves' | 'traps' | 'lats' | 'lower_back' | 'hip_flexors' | 'full_body' | 'cardio';
 
 export type Equipment = 'barbell' | 'dumbbell' | 'cable' | 'machine' | 'bodyweight' | 'kettlebell' | 'band' | 'other';
 
@@ -239,6 +239,15 @@ export interface MealPlanDay {
   dayIndex: number;
   meals: Meal[];
   totals: MacroTotals;
+}
+
+export interface NutritionDay {
+  id: string;
+  date: string;
+  meals: Meal[];
+  waterMl: number;
+  totals: MacroTotals;
+  targets: MacroTotals;
 }
 
 export type AIProvider = 'anthropic' | 'openai' | 'grok';
