@@ -10,7 +10,6 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
@@ -211,7 +210,6 @@ export function GoalsScreen({ navigation }: any) {
             activeGoals.map((goal, index) => (
               <Card
                 key={goal.id}
-                entering={FadeInDown.duration(400).delay(index * 80)}
                 style={styles.goalCard}
               >
                 <View style={styles.goalHeader}>
@@ -338,7 +336,6 @@ export function GoalsScreen({ navigation }: any) {
             {completedGoals.map((goal, index) => (
               <Card
                 key={goal.id}
-                entering={FadeInDown.duration(400).delay(index * 80)}
                 style={styles.completedCard}
               >
                 <View style={styles.completedRow}>

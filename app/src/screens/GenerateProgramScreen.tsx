@@ -12,7 +12,6 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
@@ -119,7 +118,7 @@ export function GenerateProgramScreen({ navigation }: any) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         {/* Header */}
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
+        <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -132,10 +131,10 @@ export function GenerateProgramScreen({ navigation }: any) {
               Tell me about your setup and I'll design your perfect program.
             </Text>
           </View>
-        </Animated.View>
+        </View>
 
         {/* AI Coach Bubble */}
-        <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.coachBubble}>
+        <View style={styles.coachBubble}>
           <View style={styles.coachHeader}>
             <Ionicons name="sparkles" size={14} color={colors.accent} />
             <Text style={styles.coachLabel}>Coach</Text>
@@ -143,10 +142,10 @@ export function GenerateProgramScreen({ navigation }: any) {
           <Text style={styles.coachText}>
             Let's build your program. I'll need to know your experience, schedule, and equipment.
           </Text>
-        </Animated.View>
+        </View>
 
         {/* Experience Level */}
-        <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+        <View>
           <Text style={styles.label}>
             <Ionicons name="trending-up" size={14} color={colors.accent} /> Experience Level
           </Text>
@@ -172,10 +171,10 @@ export function GenerateProgramScreen({ navigation }: any) {
               </PressableScale>
             ))}
           </View>
-        </Animated.View>
+        </View>
 
         {/* Days per Week */}
-        <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+        <View>
           <Text style={styles.label}>
             <Ionicons name="calendar-outline" size={14} color={colors.accent} /> Days per Week
           </Text>
@@ -190,10 +189,10 @@ export function GenerateProgramScreen({ navigation }: any) {
               </PressableScale>
             ))}
           </View>
-        </Animated.View>
+        </View>
 
         {/* Duration */}
-        <Animated.View entering={FadeInDown.delay(400).duration(400)}>
+        <View>
           <Text style={styles.label}>
             <Ionicons name="time-outline" size={14} color={colors.accent} /> Session Duration
           </Text>
@@ -208,10 +207,10 @@ export function GenerateProgramScreen({ navigation }: any) {
               </PressableScale>
             ))}
           </View>
-        </Animated.View>
+        </View>
 
         {/* Equipment */}
-        <Animated.View entering={FadeInDown.delay(500).duration(400)}>
+        <View>
           <Text style={styles.label}>
             <Ionicons name="construct-outline" size={14} color={colors.accent} /> Equipment
           </Text>
@@ -292,10 +291,10 @@ export function GenerateProgramScreen({ navigation }: any) {
               ))}
             </View>
           )}
-        </Animated.View>
+        </View>
 
         {/* Injuries */}
-        <Animated.View entering={FadeInDown.delay(600).duration(400)}>
+        <View>
           <Text style={styles.label}>
             <Ionicons name="medical-outline" size={14} color={colors.accent} /> Injuries / Limitations
           </Text>
@@ -306,10 +305,10 @@ export function GenerateProgramScreen({ navigation }: any) {
             value={injuries}
             onChangeText={setInjuries}
           />
-        </Animated.View>
+        </View>
 
         {/* Preferences */}
-        <Animated.View entering={FadeInDown.delay(700).duration(400)}>
+        <View>
           <Text style={styles.label}>
             <Ionicons name="chatbubble-outline" size={14} color={colors.accent} /> Preferences
           </Text>
@@ -321,11 +320,11 @@ export function GenerateProgramScreen({ navigation }: any) {
             onChangeText={setPreferences}
             multiline
           />
-        </Animated.View>
+        </View>
 
         {/* Active Goals */}
         {activeGoals.length > 0 && (
-          <Animated.View entering={FadeInDown.delay(800).duration(400)} style={styles.goalsCard}>
+          <View style={styles.goalsCard}>
             <View style={styles.goalsHeader}>
               <Ionicons name="trophy-outline" size={16} color={colors.accent} />
               <Text style={styles.goalsTitle}>Your Active Goals</Text>
@@ -337,11 +336,11 @@ export function GenerateProgramScreen({ navigation }: any) {
               </View>
             ))}
             <Text style={styles.goalsNote}>These will be factored into your program.</Text>
-          </Animated.View>
+          </View>
         )}
 
         {/* Generate Button */}
-        <Animated.View entering={FadeInDown.delay(900).duration(400)}>
+        <View>
           <PressableScale
             onPress={generate}
             disabled={loading}
@@ -359,7 +358,7 @@ export function GenerateProgramScreen({ navigation }: any) {
               </View>
             )}
           </PressableScale>
-        </Animated.View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

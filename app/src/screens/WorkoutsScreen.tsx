@@ -7,11 +7,10 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
-import { Card, PressableScale, SectionHeader, EmptyState } from '../components/ui';
+import { Card, PressableScale, SectionHeader, EmptyState, FadeInView } from '../components/ui';
 import type { Workout, WorkoutProgram, WeightUnit } from '../types';
 
 // Default starting weights in lbs (same map as ActiveWorkoutScreen)
@@ -184,7 +183,7 @@ export function WorkoutsScreen({ navigation }: any) {
         {tab === 'today' && (
           <>
             {/* Quick Start */}
-            <Animated.View entering={FadeInDown.duration(350).delay(50)}>
+            <FadeInView delay={50}>
               <PressableScale onPress={startQuickWorkout} style={styles.startCard}>
                 <Ionicons name="add-circle" size={32} color={colors.accent} />
                 <View style={styles.startTextWrap}>
@@ -192,7 +191,7 @@ export function WorkoutsScreen({ navigation }: any) {
                   <Text style={styles.startSubtitle}>Build your workout as you go</Text>
                 </View>
               </PressableScale>
-            </Animated.View>
+            </FadeInView>
 
             {/* Today's Completed Workouts */}
             {todayWorkouts.length > 0 && (
@@ -251,7 +250,7 @@ export function WorkoutsScreen({ navigation }: any) {
         {tab === 'programs' && (
           <>
             {/* Generate new program card */}
-            <Animated.View entering={FadeInDown.duration(350).delay(50)}>
+            <FadeInView delay={50}>
               <PressableScale
                 onPress={() => navigation.navigate('GenerateProgram')}
                 style={styles.generateCard}
@@ -264,7 +263,7 @@ export function WorkoutsScreen({ navigation }: any) {
                   Personalized workout plan based on your goals and equipment
                 </Text>
               </PressableScale>
-            </Animated.View>
+            </FadeInView>
 
             {programs.length === 0 && (
               <EmptyState
@@ -304,7 +303,6 @@ function ProgramQuickStart({
 
   return (
     <Card
-      entering={FadeInDown.duration(350).delay(100 + index * 80)}
       style={styles.programQuickCard}
     >
       <PressableScale onPress={() => setExpanded(!expanded)} style={styles.programQuickHeader}>
@@ -384,7 +382,7 @@ function ProgramDetailCard({
   onDelete: () => void;
 }) {
   return (
-    <Card entering={FadeInDown.duration(350).delay(150 + index * 80)}>
+    <Card>
       <View style={styles.programHeaderRow}>
         <View style={{ flex: 1 }}>
           <Text style={styles.programName}>{program.name}</Text>
@@ -438,7 +436,7 @@ function WorkoutCard({ workout, index }: { workout: Workout; index: number }) {
   );
 
   return (
-    <Card entering={FadeInDown.duration(350).delay(100 + index * 60)}>
+    <Card>
       <View style={styles.workoutHeader}>
         <Text style={styles.workoutName}>{workout.name}</Text>
         {workout.isCompleted && (

@@ -9,7 +9,6 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
@@ -197,7 +196,7 @@ export function NutritionScreen({ navigation }: any) {
         {tab === 'today' && (
           <>
             {/* Macro Summary Rings */}
-            <Animated.View entering={FadeInDown.duration(400).delay(50)}>
+            <View>
               <Card style={styles.macroCard}>
                 <View style={styles.macroRingRow}>
                   <MacroRing
@@ -234,7 +233,7 @@ export function NutritionScreen({ navigation }: any) {
                   />
                 </View>
               </Card>
-            </Animated.View>
+            </View>
 
             {/* Meal Sections */}
             <SectionHeader title="MEALS" />
@@ -243,9 +242,8 @@ export function NutritionScreen({ navigation }: any) {
               const meal = meals.find((m) => m.type === mealType.type);
               const hasFoods = meal && meal.foods.length > 0;
               return (
-                <Animated.View
+                <View
                   key={mealType.type}
-                  entering={FadeInDown.duration(350).delay(100 + index * 60)}
                 >
                   <Card style={hasFoods ? styles.mealCard : styles.mealCardEmpty}>
                     <View style={styles.mealHeader}>
@@ -293,7 +291,7 @@ export function NutritionScreen({ navigation }: any) {
                       <Text style={styles.mealSuggestionText}>Tap + to log your {mealType.label.toLowerCase()}</Text>
                     )}
                   </Card>
-                </Animated.View>
+                </View>
               );
             })}
           </>
@@ -302,7 +300,7 @@ export function NutritionScreen({ navigation }: any) {
         {tab === 'recipes' && (
           <>
             {/* Generate Recipe CTA */}
-            <Animated.View entering={FadeInDown.duration(400).delay(50)}>
+            <View>
               <Card
                 style={styles.generateCard}
                 onPress={() => navigation.navigate('FridgeManager')}
@@ -315,7 +313,7 @@ export function NutritionScreen({ navigation }: any) {
                   Tell us what's in your fridge and AI will create a macro-optimized recipe
                 </Text>
               </Card>
-            </Animated.View>
+            </View>
 
             {recipes.length === 0 ? (
               <EmptyState
@@ -327,9 +325,8 @@ export function NutritionScreen({ navigation }: any) {
               <>
                 <SectionHeader title="YOUR RECIPES" />
                 {recipes.map((recipe, index) => (
-                  <Animated.View
+                  <View
                     key={recipe.id}
-                    entering={FadeInDown.duration(350).delay(100 + index * 60)}
                   >
                     <Card
                       onPress={() => navigation.navigate('RecipeDetail', { recipeId: recipe.id })}
@@ -375,7 +372,7 @@ export function NutritionScreen({ navigation }: any) {
                         </View>
                       )}
                     </Card>
-                  </Animated.View>
+                  </View>
                 ))}
               </>
             )}
@@ -384,7 +381,7 @@ export function NutritionScreen({ navigation }: any) {
 
         {tab === 'fridge' && (
           <>
-            <Animated.View entering={FadeInDown.duration(400).delay(50)}>
+            <View>
               <PressableScale
                 onPress={() => navigation.navigate('FridgeManager')}
                 style={styles.manageFridgeBtn}
@@ -393,7 +390,7 @@ export function NutritionScreen({ navigation }: any) {
                 <Text style={styles.manageFridgeText}>Manage Fridge Items</Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </PressableScale>
-            </Animated.View>
+            </View>
 
             {fridgeItems.length === 0 ? (
               <EmptyState
@@ -407,9 +404,8 @@ export function NutritionScreen({ navigation }: any) {
               <>
                 <SectionHeader title={`${fridgeItems.length} ITEMS`} />
                 {fridgeItems.map((item, index) => (
-                  <Animated.View
+                  <View
                     key={item.id}
-                    entering={FadeInDown.duration(300).delay(80 + index * 40)}
                   >
                     <Card style={styles.fridgeItem}>
                       <View style={styles.fridgeItemLeft}>
@@ -422,7 +418,7 @@ export function NutritionScreen({ navigation }: any) {
                         </Text>
                       ) : null}
                     </Card>
-                  </Animated.View>
+                  </View>
                 ))}
               </>
             )}

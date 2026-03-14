@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, FadeInUp, FadeIn } from 'react-native-reanimated';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
 import { PressableScale, Card } from '../components/ui';
 import { useStore } from '../services/store';
@@ -132,8 +131,7 @@ function estimateWeights(
 // ---- AI Coach Message Bubble ----
 function CoachBubble({ message, delay = 0 }: { message: string; delay?: number }) {
   return (
-    <Animated.View
-      entering={FadeInDown.duration(400).delay(delay)}
+    <View
       style={bubbleStyles.container}
     >
       <View style={bubbleStyles.header}>
@@ -143,7 +141,7 @@ function CoachBubble({ message, delay = 0 }: { message: string; delay?: number }
         <Text style={bubbleStyles.label}>Coach</Text>
       </View>
       <Text style={bubbleStyles.message}>{message}</Text>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -246,9 +244,8 @@ function GoalStep({ selected, onSelect }: {
       <CoachBubble message="Hey! I'm your AI coach. What's your primary fitness goal?" />
       <View style={stepStyles.grid}>
         {goals.map((g, index) => (
-          <Animated.View
+          <View
             key={g.key}
-            entering={FadeInUp.duration(350).delay(100 + index * 60)}
             style={{ width: '48%' }}
           >
             <PressableScale onPress={() => onSelect(g.key)}>
@@ -266,7 +263,7 @@ function GoalStep({ selected, onSelect }: {
                 <Text style={stepStyles.goalDesc}>{g.desc}</Text>
               </View>
             </PressableScale>
-          </Animated.View>
+          </View>
         ))}
       </View>
     </View>
@@ -304,7 +301,7 @@ function AboutYouStep({ data, onChange }: {
     <View style={stepStyles.container}>
       <CoachBubble message="Great choice! Let me learn a bit about you so I can personalize everything." />
 
-      <Animated.View entering={FadeInUp.duration(350).delay(100)}>
+      <View>
         <Text style={stepStyles.fieldLabel}>Gender</Text>
         <View style={stepStyles.pillRow}>
           {genders.map((g) => (
@@ -317,9 +314,9 @@ function AboutYouStep({ data, onChange }: {
             </PressableScale>
           ))}
         </View>
-      </Animated.View>
+      </View>
 
-      <Animated.View entering={FadeInUp.duration(350).delay(200)}>
+      <View>
         <Text style={stepStyles.fieldLabel}>Age</Text>
         <TextInput
           style={stepStyles.input}
@@ -330,9 +327,9 @@ function AboutYouStep({ data, onChange }: {
           placeholderTextColor={colors.textMuted}
           maxLength={3}
         />
-      </Animated.View>
+      </View>
 
-      <Animated.View entering={FadeInUp.duration(350).delay(300)}>
+      <View>
         <Text style={stepStyles.fieldLabel}>Height</Text>
         <View style={stepStyles.heightRow}>
           <TextInput
@@ -356,9 +353,9 @@ function AboutYouStep({ data, onChange }: {
           />
           <Text style={stepStyles.heightUnit}>in</Text>
         </View>
-      </Animated.View>
+      </View>
 
-      <Animated.View entering={FadeInUp.duration(350).delay(400)}>
+      <View>
         <Text style={stepStyles.fieldLabel}>Current Weight (lbs)</Text>
         <TextInput
           style={stepStyles.input}
@@ -369,7 +366,7 @@ function AboutYouStep({ data, onChange }: {
           placeholderTextColor={colors.textMuted}
           maxLength={3}
         />
-      </Animated.View>
+      </View>
     </View>
   );
 }
@@ -389,7 +386,7 @@ function ExperienceStep({ selected, onSelect }: {
     <View style={stepStyles.container}>
       <CoachBubble message="How long have you been training?" />
       {levels.map((l, index) => (
-        <Animated.View key={l.key} entering={FadeInUp.duration(350).delay(100 + index * 80)}>
+        <View key={l.key}>
           <PressableScale onPress={() => onSelect(l.key)}>
             <View style={[stepStyles.expCard, selected === l.key && stepStyles.expCardSelected]}>
               <View style={[stepStyles.expIconWrap, selected === l.key && stepStyles.expIconWrapSelected]}>
@@ -407,7 +404,7 @@ function ExperienceStep({ selected, onSelect }: {
               </View>
             </View>
           </PressableScale>
-        </Animated.View>
+        </View>
       ))}
     </View>
   );
@@ -448,7 +445,7 @@ function EquipmentStep({ selected, onSelect }: {
     <View style={stepStyles.container}>
       <CoachBubble message="What equipment do you have access to?" />
 
-      <Animated.View entering={FadeInUp.duration(350).delay(100)}>
+      <View>
         <View style={stepStyles.presetRow}>
           {presets.map((p) => (
             <PressableScale key={p.key} onPress={() => onSelect(p.items)} style={{ flex: 1 }}>
@@ -458,9 +455,9 @@ function EquipmentStep({ selected, onSelect }: {
             </PressableScale>
           ))}
         </View>
-      </Animated.View>
+      </View>
 
-      <Animated.View entering={FadeInUp.duration(350).delay(200)}>
+      <View>
         <View style={stepStyles.equipGrid}>
           {allEquipment.map((eq) => (
             <PressableScale key={eq.key} onPress={() => toggleEquipment(eq.key)}>
@@ -478,7 +475,7 @@ function EquipmentStep({ selected, onSelect }: {
             </PressableScale>
           ))}
         </View>
-      </Animated.View>
+      </View>
     </View>
   );
 }
@@ -501,7 +498,7 @@ function PreferencesStep({ data, onChange }: {
     <View style={stepStyles.container}>
       <CoachBubble message="Almost there! Let's set up your training schedule." />
 
-      <Animated.View entering={FadeInUp.duration(350).delay(100)}>
+      <View>
         <Text style={stepStyles.fieldLabel}>Days per Week</Text>
         <View style={stepStyles.pillRow}>
           {days.map((d) => (
@@ -514,9 +511,9 @@ function PreferencesStep({ data, onChange }: {
             </PressableScale>
           ))}
         </View>
-      </Animated.View>
+      </View>
 
-      <Animated.View entering={FadeInUp.duration(350).delay(200)}>
+      <View>
         <Text style={stepStyles.fieldLabel}>Session Duration</Text>
         <View style={stepStyles.pillRow}>
           {durations.map((d) => (
@@ -529,9 +526,9 @@ function PreferencesStep({ data, onChange }: {
             </PressableScale>
           ))}
         </View>
-      </Animated.View>
+      </View>
 
-      <Animated.View entering={FadeInUp.duration(350).delay(300)}>
+      <View>
         <Text style={stepStyles.fieldLabel}>Workout Split</Text>
         {splits.map((s) => (
           <PressableScale key={s.key} onPress={() => onChange('splitPreference', s.key)}>
@@ -542,7 +539,7 @@ function PreferencesStep({ data, onChange }: {
             </View>
           </PressableScale>
         ))}
-      </Animated.View>
+      </View>
     </View>
   );
 }
@@ -565,16 +562,16 @@ function StrengthStep({ weights, onAdjust }: {
     <View style={stepStyles.container}>
       <CoachBubble message="Here are your estimated starting weights. Feel free to adjust." />
 
-      <Animated.View entering={FadeInUp.duration(350).delay(100)}>
+      <View>
         <Card style={stepStyles.infoBox}>
           <Text style={stepStyles.infoText}>
             These are intentionally conservative. The app learns from every workout and adjusts automatically.
           </Text>
         </Card>
-      </Animated.View>
+      </View>
 
       {keyLifts.map((lift, index) => (
-        <Animated.View key={lift.name} entering={FadeInUp.duration(300).delay(150 + index * 60)}>
+        <View key={lift.name}>
           <View style={stepStyles.weightRow}>
             <View style={stepStyles.weightInfo}>
               <Ionicons name={lift.icon} size={20} color={colors.accentLight} style={{ marginRight: spacing.md }} />
@@ -594,7 +591,7 @@ function StrengthStep({ weights, onAdjust }: {
               </PressableScale>
             </View>
           </View>
-        </Animated.View>
+        </View>
       ))}
     </View>
   );
@@ -604,22 +601,22 @@ function StrengthStep({ weights, onAdjust }: {
 function ReadyStep({ goalLabel, loading }: { goalLabel: string; loading: boolean }) {
   return (
     <View style={[stepStyles.container, { justifyContent: 'center', alignItems: 'center', flex: 1, paddingTop: 60 }]}>
-      <Animated.View entering={FadeIn.duration(500)} style={{ alignItems: 'center' }}>
+      <View style={{ alignItems: 'center' }}>
         <View style={readyStyles.iconWrap}>
           <Ionicons name="rocket" size={48} color={colors.accent} />
         </View>
-      </Animated.View>
-      <Animated.View entering={FadeInDown.duration(400).delay(200)} style={{ alignItems: 'center' }}>
+      </View>
+      <View style={{ alignItems: 'center' }}>
         <Text style={[stepStyles.title, { textAlign: 'center', marginTop: spacing.xxl }]}>You're All Set!</Text>
         <Text style={[stepStyles.subtitle, { textAlign: 'center', marginBottom: spacing.xxxl }]}>
           Your personalized {goalLabel} program is ready. Let's get your first workout in.
         </Text>
-      </Animated.View>
+      </View>
       {loading && (
-        <Animated.View entering={FadeIn.duration(300).delay(400)} style={readyStyles.loadingRow}>
+        <View style={readyStyles.loadingRow}>
           <ActivityIndicator color={colors.accent} size="small" />
           <Text style={readyStyles.loadingText}>Generating your first workout...</Text>
-        </Animated.View>
+        </View>
       )}
     </View>
   );
@@ -794,9 +791,9 @@ export function OnboardingScreen({ navigation }: any) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Animated.View key={stepKey} entering={FadeIn.duration(300)}>
+          <View key={stepKey}>
             {renderStep()}
-          </Animated.View>
+          </View>
           <View style={{ height: 40 }} />
         </ScrollView>
 

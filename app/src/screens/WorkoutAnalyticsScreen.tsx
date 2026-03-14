@@ -10,7 +10,6 @@ import {
   UIManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { useStore } from '../services/store';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
 import { Card, SectionHeader, EmptyState } from '../components/ui';
@@ -337,18 +336,18 @@ export function WorkoutAnalyticsScreen({ navigation }: any) {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.header}>
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Workout Analytics</Text>
         <View style={{ width: 40 }} />
-      </Animated.View>
+      </View>
 
       {/* Summary Stats */}
       <View style={styles.sectionPadding}>
         <SectionHeader title="SUMMARY" />
-        <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.statsGrid}>
+        <View style={styles.statsGrid}>
           <StatCard
             icon="barbell-outline"
             label="Total Workouts"
@@ -376,18 +375,17 @@ export function WorkoutAnalyticsScreen({ navigation }: any) {
             suffix="avg"
             color={colors.warning}
           />
-        </Animated.View>
+        </View>
       </View>
 
       {/* Muscle Group Frequency */}
       {muscleFrequency.length > 0 && (
         <View style={styles.sectionPadding}>
           <SectionHeader title="MUSCLE GROUP FREQUENCY" />
-          <Card entering={FadeInDown.delay(200).duration(400)}>
+          <Card>
             {muscleFrequency.map(([muscle, count], index) => (
-              <Animated.View
+              <View
                 key={muscle}
-                entering={FadeInRight.delay(250 + index * 50).duration(300)}
                 style={styles.barRow}
               >
                 <Text style={styles.barLabel}>{formatMuscleGroup(muscle)}</Text>
@@ -403,7 +401,7 @@ export function WorkoutAnalyticsScreen({ navigation }: any) {
                   />
                 </View>
                 <Text style={styles.barCount}>{count}</Text>
-              </Animated.View>
+              </View>
             ))}
           </Card>
         </View>
@@ -422,7 +420,6 @@ export function WorkoutAnalyticsScreen({ navigation }: any) {
             return (
               <Card
                 key={ex.exerciseId}
-                entering={FadeInDown.delay(300 + index * 80).duration(400)}
                 onPress={() => toggleExercise(ex.exerciseId)}
               >
                 {/* Exercise header row */}
@@ -511,7 +508,6 @@ export function WorkoutAnalyticsScreen({ navigation }: any) {
           {overloadSuggestions.map((suggestion, index) => (
             <Card
               key={`${suggestion.exerciseName}-${suggestion.type}`}
-              entering={FadeInDown.delay(400 + index * 80).duration(400)}
             >
               <View style={styles.suggestionRow}>
                 <View style={[styles.suggestionIcon, { backgroundColor: suggestion.color + '20' }]}>

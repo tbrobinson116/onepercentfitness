@@ -9,12 +9,11 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
-import { Card, PressableScale, SectionHeader, EmptyState, IconButton } from '../components/ui';
+import { Card, PressableScale, SectionHeader, EmptyState, IconButton, FadeInView } from '../components/ui';
 import type { BodyMeasurement, BloodWork, BloodWorkResult } from '../types';
 
 const TABS = ['overview', 'measurements', 'bloodwork', 'settings'] as const;
@@ -219,7 +218,7 @@ export function ProfileScreen({ navigation }: any) {
             <SectionHeader title="QUICK ACTIONS" />
             <Card
               onPress={() => setShowAddMeasurement(true)}
-              entering={FadeInDown.duration(400).delay(200)}
+
               style={styles.actionCard}
             >
               <View style={[styles.actionIconWrap, { backgroundColor: colors.accentDim }]}>
@@ -234,7 +233,7 @@ export function ProfileScreen({ navigation }: any) {
 
             <Card
               onPress={() => setShowAddBloodWork(true)}
-              entering={FadeInDown.duration(400).delay(250)}
+
               style={styles.actionCard}
             >
               <View style={[styles.actionIconWrap, { backgroundColor: colors.dangerDim }]}>
@@ -249,7 +248,6 @@ export function ProfileScreen({ navigation }: any) {
 
             <Card
               onPress={() => navigation.navigate('ProgressPhotos')}
-              entering={FadeInDown.duration(400).delay(300)}
               style={styles.actionCard}
             >
               <View style={[styles.actionIconWrap, { backgroundColor: '#2d1f4e' }]}>
@@ -270,7 +268,7 @@ export function ProfileScreen({ navigation }: any) {
                   action="View All"
                   onAction={() => setTab('measurements')}
                 />
-                <Card entering={FadeInDown.duration(400).delay(300)}>
+                <Card>
                   {measurements.slice(0, 5).map((m, index) => (
                     <View
                       key={m.id}
@@ -317,7 +315,6 @@ export function ProfileScreen({ navigation }: any) {
               measurements.map((m, index) => (
                 <Card
                   key={m.id}
-                  entering={FadeInDown.duration(400).delay(index * 60)}
                 >
                   <View style={styles.measurementHeader}>
                     <Ionicons name="calendar-outline" size={16} color={colors.accent} />
@@ -357,7 +354,7 @@ export function ProfileScreen({ navigation }: any) {
               <Text style={styles.addBtnText}>Add Blood Work</Text>
             </PressableScale>
 
-            <Card entering={FadeInDown.duration(400)} style={styles.infoCard}>
+            <Card style={styles.infoCard}>
               <View style={styles.infoRow}>
                 <Ionicons name="information-circle-outline" size={18} color={colors.accent} />
                 <Text style={styles.infoText}>
@@ -379,7 +376,6 @@ export function ProfileScreen({ navigation }: any) {
               bloodWork.map((bw, index) => (
                 <Card
                   key={bw.id}
-                  entering={FadeInDown.duration(400).delay(index * 60)}
                 >
                   <View style={styles.measurementHeader}>
                     <Ionicons name="calendar-outline" size={16} color={colors.accent} />
@@ -453,7 +449,7 @@ export function ProfileScreen({ navigation }: any) {
         {tab === 'settings' && (
           <>
             <SectionHeader title="MACRO TARGETS" />
-            <Card entering={FadeInDown.duration(400)}>
+            <Card>
               <SettingInput
                 icon="flame-outline"
                 label="Daily Calories"
@@ -482,7 +478,7 @@ export function ProfileScreen({ navigation }: any) {
             </Card>
 
             <SectionHeader title="PROFILE" />
-            <Card entering={FadeInDown.duration(400).delay(60)}>
+            <Card>
               <SettingInput
                 icon="person-outline"
                 label="Name"
@@ -504,7 +500,7 @@ export function ProfileScreen({ navigation }: any) {
             </Card>
 
             <SectionHeader title="DATA" />
-            <Card entering={FadeInDown.duration(400).delay(120)}>
+            <Card>
               <PressableScale
                 style={styles.resetBtn}
                 onPress={() => {
@@ -703,8 +699,8 @@ function StatCard({
   delay?: number;
 }) {
   return (
-    <Animated.View
-      entering={FadeInDown.duration(400).delay(delay)}
+    <FadeInView
+      delay={delay}
       style={styles.statCard}
     >
       <View style={[styles.statIconWrap, { backgroundColor: color + '18' }]}>
@@ -715,7 +711,7 @@ function StatCard({
         <Text style={styles.statValue}>{value}</Text>
         {value !== '--' && <Text style={styles.statUnit}>{unit}</Text>}
       </View>
-    </Animated.View>
+    </FadeInView>
   );
 }
 

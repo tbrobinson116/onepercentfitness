@@ -1,9 +1,45 @@
-import React, { useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle, TextStyle, StyleProp } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ViewStyle, TextStyle, StyleProp, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, FadeInUp, useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import { colors, typography, borderRadius, shadows, spacing } from '../theme';
+
+// ---- Simple fade-in wrapper to replace Reanimated entering animations ----
+export function FadeInView({
+  children,
+  delay = 0,
+  style,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(12)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 400,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 400,
+        delay,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View style={[style, { opacity, transform: [{ translateY }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
 
 // ---- Animated Pressable Button ----
 export function PressableScale({
@@ -19,20 +55,30 @@ export function PressableScale({
   disabled?: boolean;
   activeOpacity?: number;
 }) {
-  const scale = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: disabled ? 0.4 : 1,
-  }));
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onPressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
 
   return (
-    <Animated.View style={animatedStyle}>
+    <Animated.View style={{ transform: [{ scale }], opacity: disabled ? 0.4 : 1 }}>
       <TouchableOpacity
         onPress={onPress}
         disabled={disabled}
         activeOpacity={activeOpacity}
-        onPressIn={() => { scale.value = withSpring(0.97, { damping: 15, stiffness: 300 }); }}
-        onPressOut={() => { scale.value = withSpring(1, { damping: 15, stiffness: 300 }); }}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
         style={style}
       >
         {children}
@@ -86,12 +132,9 @@ export function Card({
   entering?: any;
 }) {
   const cardContent = (
-    <Animated.View
-      entering={entering}
-      style={[cardStyles.container, style]}
-    >
+    <View style={[cardStyles.container, style]}>
       {children}
-    </Animated.View>
+    </View>
   );
 
   if (onPress) {
@@ -267,7 +310,7 @@ export function EmptyState({
   onAction?: () => void;
 }) {
   return (
-    <Animated.View entering={FadeInDown.duration(400)} style={emptyStyles.container}>
+    <FadeInView style={emptyStyles.container}>
       <View style={emptyStyles.iconContainer}>
         <Ionicons name={icon} size={40} color={colors.textMuted} />
       </View>
@@ -278,7 +321,7 @@ export function EmptyState({
           <Text style={emptyStyles.actionText}>{actionLabel}</Text>
         </TouchableOpacity>
       )}
-    </Animated.View>
+    </FadeInView>
   );
 }
 

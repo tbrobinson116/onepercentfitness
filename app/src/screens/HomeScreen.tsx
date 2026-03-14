@@ -7,11 +7,10 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
-import { ProgressRing, Card, PressableScale, SectionHeader, EmptyState } from '../components/ui';
+import { ProgressRing, Card, PressableScale, SectionHeader, EmptyState, FadeInView } from '../components/ui';
 
 // Get day of week index (0 = Monday)
 function getDayOfWeek(date: Date): number {
@@ -132,7 +131,7 @@ export function HomeScreen({ navigation }: any) {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
       {/* Hero Header */}
-      <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.hero}>
+      <FadeInView delay={0} style={styles.hero}>
         <View style={styles.heroContent}>
           <View style={styles.heroTextBlock}>
             <Text style={styles.greeting}>
@@ -154,12 +153,12 @@ export function HomeScreen({ navigation }: any) {
             <Text style={styles.streakPillText}>{streak} day streak</Text>
           </View>
         )}
-      </Animated.View>
+      </FadeInView>
 
       {/* Weekly Activity */}
       <View style={styles.sectionPadding}>
         <SectionHeader title="WEEKLY ACTIVITY" />
-        <Card entering={FadeInDown.delay(100).duration(400)}>
+        <Card>
           <View style={styles.weeklyHeader}>
             <View>
               <Text style={styles.weeklyCount}>
@@ -203,7 +202,7 @@ export function HomeScreen({ navigation }: any) {
       {/* Nutrition Progress */}
       <View style={styles.sectionPadding}>
         <SectionHeader title="TODAY'S NUTRITION" />
-        <Card entering={FadeInDown.delay(200).duration(400)}>
+        <Card>
           <View style={styles.macroRow}>
             <View style={styles.macroItem}>
               <ProgressRing
@@ -261,7 +260,6 @@ export function HomeScreen({ navigation }: any) {
       <View style={styles.sectionPadding}>
         <SectionHeader title="TODAY'S WORKOUT" />
         <Card
-          entering={FadeInDown.delay(300).duration(400)}
           onPress={() => navigation.navigate('Workouts')}
         >
           {todayWorkout ? (
@@ -311,7 +309,6 @@ export function HomeScreen({ navigation }: any) {
           activeGoals.slice(0, 3).map((goal, index) => (
             <Card
               key={goal.id}
-              entering={FadeInDown.delay(400 + index * 100).duration(400)}
             >
               <View style={styles.goalRow}>
                 <View style={styles.goalInfo}>
@@ -332,7 +329,7 @@ export function HomeScreen({ navigation }: any) {
             </Card>
           ))
         ) : (
-          <Card entering={FadeInDown.delay(400).duration(400)}>
+          <Card>
             <EmptyState
               icon="flag-outline"
               title="No goals set yet"
@@ -347,7 +344,7 @@ export function HomeScreen({ navigation }: any) {
       {/* Quick Actions */}
       <View style={styles.sectionPadding}>
         <SectionHeader title="QUICK ACTIONS" />
-        <Animated.View entering={FadeInDown.delay(600).duration(400)} style={styles.quickActions}>
+        <FadeInView delay={600} style={styles.quickActions}>
           <PressableScale
             onPress={() => navigation.navigate('Workouts')}
             style={styles.quickActionTile}
@@ -375,8 +372,8 @@ export function HomeScreen({ navigation }: any) {
             </View>
             <Text style={styles.quickActionText}>Log{'\n'}Metrics</Text>
           </PressableScale>
-        </Animated.View>
-        <Animated.View entering={FadeInDown.delay(700).duration(400)} style={styles.quickActions}>
+        </FadeInView>
+        <FadeInView delay={700} style={styles.quickActions}>
           <PressableScale
             onPress={() => navigation.navigate('WorkoutAnalytics')}
             style={styles.quickActionTile}
@@ -404,7 +401,7 @@ export function HomeScreen({ navigation }: any) {
             </View>
             <Text style={styles.quickActionText}>Fridge{'\n'}Manager</Text>
           </PressableScale>
-        </Animated.View>
+        </FadeInView>
       </View>
     </ScrollView>
   );

@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
@@ -101,7 +100,7 @@ export function FridgeManagerScreen({ navigation }: any) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 60 }}>
       {/* Header */}
-      <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
@@ -109,10 +108,10 @@ export function FridgeManagerScreen({ navigation }: any) {
           <Ionicons name="snow-outline" size={24} color={colors.accent} />
           <Text style={styles.title}>My Fridge</Text>
         </View>
-      </Animated.View>
+      </View>
 
       {/* Add Item */}
-      <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.addSection}>
+      <View style={styles.addSection}>
         <TextInput
           style={styles.nameInput}
           placeholder="Add item (e.g., chicken breast)"
@@ -163,10 +162,10 @@ export function FridgeManagerScreen({ navigation }: any) {
             </TouchableOpacity>
           ))}
         </ScrollView>
-      </Animated.View>
+      </View>
 
       {/* Generate Recipe Button */}
-      <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+      <View>
         <PressableScale
           onPress={generateRecipe}
           disabled={generatingRecipe}
@@ -186,7 +185,7 @@ export function FridgeManagerScreen({ navigation }: any) {
             </>
           )}
         </PressableScale>
-      </Animated.View>
+      </View>
 
       {/* Fridge Contents */}
       {fridgeItems.length === 0 ? (
@@ -197,9 +196,8 @@ export function FridgeManagerScreen({ navigation }: any) {
         />
       ) : (
         grouped.map((group, i) => (
-          <Animated.View
+          <View
             key={group.category}
-            entering={FadeInDown.delay(300 + i * 100).duration(400)}
             style={styles.groupCard}
           >
             <View style={styles.groupHeader}>
@@ -224,7 +222,7 @@ export function FridgeManagerScreen({ navigation }: any) {
                 </TouchableOpacity>
               </View>
             ))}
-          </Animated.View>
+          </View>
         ))
       )}
     </ScrollView>
