@@ -376,6 +376,35 @@ export function HomeScreen({ navigation }: any) {
             <Text style={styles.quickActionText}>Log{'\n'}Metrics</Text>
           </PressableScale>
         </Animated.View>
+        <Animated.View entering={FadeInDown.delay(700).duration(400)} style={styles.quickActions}>
+          <PressableScale
+            onPress={() => navigation.navigate('WorkoutAnalytics')}
+            style={styles.quickActionTile}
+          >
+            <View style={[styles.quickActionIconBg, { backgroundColor: '#1a2a3a' }]}>
+              <Ionicons name="analytics-outline" size={28} color="#45B7D1" />
+            </View>
+            <Text style={styles.quickActionText}>Workout{'\n'}Analytics</Text>
+          </PressableScale>
+          <PressableScale
+            onPress={() => navigation.navigate('ProgressPhotos')}
+            style={styles.quickActionTile}
+          >
+            <View style={[styles.quickActionIconBg, { backgroundColor: '#2d1f4e' }]}>
+              <Ionicons name="camera-outline" size={28} color="#a78bfa" />
+            </View>
+            <Text style={styles.quickActionText}>Progress{'\n'}Photos</Text>
+          </PressableScale>
+          <PressableScale
+            onPress={() => navigation.navigate('FridgeManager')}
+            style={styles.quickActionTile}
+          >
+            <View style={[styles.quickActionIconBg, { backgroundColor: '#1a3a2a' }]}>
+              <Ionicons name="leaf-outline" size={28} color="#82E0AA" />
+            </View>
+            <Text style={styles.quickActionText}>Fridge{'\n'}Manager</Text>
+          </PressableScale>
+        </Animated.View>
       </View>
     </ScrollView>
   );

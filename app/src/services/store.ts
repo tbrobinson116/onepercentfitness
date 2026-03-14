@@ -13,6 +13,7 @@ import type {
   FridgeItem,
   MacroTotals,
   WeightUnit,
+  ProgressPhoto,
 } from '../types';
 
 // --- Onboarding types ---
@@ -91,6 +92,12 @@ interface AppState {
   workoutHistory: Workout[];
   addToHistory: (w: Workout) => void;
   setWorkoutHistory: (w: Workout[]) => void;
+
+  // Progress photos
+  progressPhotos: ProgressPhoto[];
+  addProgressPhoto: (p: ProgressPhoto) => void;
+  removeProgressPhoto: (id: string) => void;
+  setProgressPhotos: (p: ProgressPhoto[]) => void;
 
   // Settings
   weightUnit: WeightUnit;
@@ -186,6 +193,14 @@ export const useStore = create<AppState>()(
         set((s) => ({ workoutHistory: [w, ...s.workoutHistory].slice(0, 200) })),
       setWorkoutHistory: (workoutHistory) => set({ workoutHistory }),
 
+      // Progress photos
+      progressPhotos: [],
+      addProgressPhoto: (p) =>
+        set((s) => ({ progressPhotos: [p, ...s.progressPhotos] })),
+      removeProgressPhoto: (id) =>
+        set((s) => ({ progressPhotos: s.progressPhotos.filter((p) => p.id !== id) })),
+      setProgressPhotos: (progressPhotos) => set({ progressPhotos }),
+
       // Settings
       weightUnit: 'lbs' as WeightUnit,
       setWeightUnit: (weightUnit) => set({ weightUnit }),
@@ -218,6 +233,7 @@ export const useStore = create<AppState>()(
         recipes: state.recipes,
         fridgeItems: state.fridgeItems,
         workoutHistory: state.workoutHistory,
+        progressPhotos: state.progressPhotos,
         weightUnit: state.weightUnit,
       }),
       onRehydrateStorage: () => (state) => {

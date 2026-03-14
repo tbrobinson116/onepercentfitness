@@ -146,13 +146,21 @@ export function WorkoutsScreen({ navigation }: any) {
           <Ionicons name="barbell" size={24} color={colors.accent} style={{ marginRight: spacing.sm }} />
           <Text style={styles.title}>Workouts</Text>
         </View>
-        <PressableScale
-          onPress={() => navigation.navigate('GenerateProgram')}
-          style={styles.newProgramBtn}
-        >
-          <Ionicons name="sparkles" size={16} color={colors.text} style={{ marginRight: spacing.xs }} />
-          <Text style={styles.newProgramText}>New Program</Text>
-        </PressableScale>
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <PressableScale
+            onPress={() => navigation.navigate('WorkoutAnalytics')}
+            style={styles.newProgramBtn}
+          >
+            <Ionicons name="analytics" size={16} color={colors.accent} />
+          </PressableScale>
+          <PressableScale
+            onPress={() => navigation.navigate('GenerateProgram')}
+            style={styles.newProgramBtn}
+          >
+            <Ionicons name="sparkles" size={16} color={colors.text} style={{ marginRight: spacing.xs }} />
+            <Text style={styles.newProgramText}>New Program</Text>
+          </PressableScale>
+        </View>
       </View>
 
       {/* Pill Tabs */}

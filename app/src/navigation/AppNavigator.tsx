@@ -16,6 +16,8 @@ import { NutritionScreen } from '../screens/NutritionScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { GenerateProgramScreen } from '../screens/GenerateProgramScreen';
 import { FridgeManagerScreen } from '../screens/FridgeManagerScreen';
+import { WorkoutAnalyticsScreen } from '../screens/WorkoutAnalyticsScreen';
+import { ProgressPhotosScreen } from '../screens/ProgressPhotosScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -117,6 +119,8 @@ export function AppNavigator() {
             />
             <Stack.Screen name="GenerateProgram" component={GenerateProgramScreen} />
             <Stack.Screen name="FridgeManager" component={FridgeManagerScreen} />
+            <Stack.Screen name="WorkoutAnalytics" component={WorkoutAnalyticsScreen} />
+            <Stack.Screen name="ProgressPhotos" component={ProgressPhotosScreen} />
           </>
         )}
       </Stack.Navigator>

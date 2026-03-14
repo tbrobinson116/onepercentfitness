@@ -247,6 +247,21 @@ export function ProfileScreen({ navigation }: any) {
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Card>
 
+            <Card
+              onPress={() => navigation.navigate('ProgressPhotos')}
+              entering={FadeInDown.duration(400).delay(300)}
+              style={styles.actionCard}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: '#2d1f4e' }]}>
+                <Ionicons name="camera-outline" size={22} color="#a78bfa" />
+              </View>
+              <View style={styles.actionContent}>
+                <Text style={styles.actionTitle}>Progress Photos</Text>
+                <Text style={styles.actionDesc}>Track your visual transformation</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </Card>
+
             {/* Recent Measurements */}
             {measurements.length > 0 && (
               <>

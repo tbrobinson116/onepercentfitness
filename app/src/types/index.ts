@@ -330,6 +330,21 @@ export interface GenerateRecipeRequest {
   preferences?: string;
 }
 
+// --- Progress Photos ---
+
+export type PhotoPose = 'front' | 'side' | 'back' | 'custom';
+
+export interface ProgressPhoto {
+  id: string;
+  uri: string;
+  date: string;
+  pose: PhotoPose;
+  bodyWeight?: number;
+  bodyFatPercent?: number;
+  notes?: string;
+  goalId?: string; // Link to a physique goal
+}
+
 // --- Navigation ---
 
 export type RootStackParamList = {
@@ -346,6 +361,8 @@ export type RootStackParamList = {
   GenerateMealPlan: undefined;
   BloodWorkEntry: undefined;
   FridgeManager: undefined;
+  WorkoutAnalytics: undefined;
+  ProgressPhotos: undefined;
 };
 
 export type TabParamList = {
