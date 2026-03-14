@@ -7,6 +7,7 @@ import nutritionRoutes from './routes/nutrition.js';
 import goalRoutes from './routes/goals.js';
 import profileRoutes from './routes/profile.js';
 import exerciseRoutes from './routes/exercises.js';
+import coachRoutes from './routes/coach.js';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -26,6 +27,7 @@ app.use('/api/nutrition', nutritionRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/exercises', exerciseRoutes);
+app.use('/api/coach', coachRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

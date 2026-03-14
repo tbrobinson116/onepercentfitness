@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,16 @@ import {
   TextInput,
   Modal,
   Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../theme';
 import { Card, PressableScale, MacroRing, SectionHeader, EmptyState, FadeInView } from '../components/ui';
+import { searchFoods, type FoodItem } from '../data/foodDatabase';
 import type { Meal, FoodEntry, MacroTotals, MealType } from '../types';
 
 const MEAL_TYPES: { type: MealType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -49,6 +53,48 @@ export function NutritionScreen({ navigation }: any) {
     servingSize: '1',
     servingUnit: 'serving',
   });
+  const [foodSearchResults, setFoodSearchResults] = useState<FoodItem[]>([]);
+  const [selectedDbFood, setSelectedDbFood] = useState<FoodItem | null>(null);
+  const [servingMultiplier, setServingMultiplier] = useState('1');
+
+  const handleFoodNameChange = useCallback((text: string) => {
+    setNewFood((prev) => ({ ...prev, name: text }));
+    setSelectedDbFood(null);
+    if (text.length >= 2) {
+      setFoodSearchResults(searchFoods(text, 8));
+    } else {
+      setFoodSearchResults([]);
+    }
+  }, []);
+
+  const selectFoodFromDb = useCallback((food: FoodItem) => {
+    setSelectedDbFood(food);
+    setServingMultiplier('1');
+    setNewFood({
+      name: food.name,
+      calories: food.calories.toString(),
+      proteinG: food.protein.toString(),
+      carbsG: food.carbs.toString(),
+      fatG: food.fat.toString(),
+      servingSize: food.servingSize.toString(),
+      servingUnit: food.servingUnit,
+    });
+    setFoodSearchResults([]);
+  }, []);
+
+  const updateServingMultiplier = useCallback((mult: string) => {
+    setServingMultiplier(mult);
+    if (selectedDbFood) {
+      const m = parseFloat(mult) || 0;
+      setNewFood((prev) => ({
+        ...prev,
+        calories: Math.round(selectedDbFood.calories * m).toString(),
+        proteinG: Math.round(selectedDbFood.protein * m).toString(),
+        carbsG: Math.round(selectedDbFood.carbs * m).toString(),
+        fatG: Math.round(selectedDbFood.fat * m).toString(),
+      }));
+    }
+  }, [selectedDbFood]);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -434,7 +480,10 @@ export function NutritionScreen({ navigation }: any) {
 
       {/* Add Food Modal */}
       <Modal visible={showAddFood} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={styles.modal}>
             <View style={styles.modalHandle} />
 
@@ -449,68 +498,184 @@ export function NutritionScreen({ navigation }: any) {
               </Text>
             </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Food name"
-              placeholderTextColor={colors.textMuted}
-              value={newFood.name}
-              onChangeText={(name) => setNewFood({ ...newFood, name })}
-            />
-
-            <View style={styles.macroInputRow}>
-              <View style={styles.macroInput}>
-                <Text style={styles.macroInputLabel}>Calories</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={colors.textMuted}
-                  value={newFood.calories}
-                  onChangeText={(calories) => setNewFood({ ...newFood, calories })}
-                />
-              </View>
-              <View style={styles.macroInput}>
-                <Text style={styles.macroInputLabel}>Protein (g)</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={colors.textMuted}
-                  value={newFood.proteinG}
-                  onChangeText={(proteinG) => setNewFood({ ...newFood, proteinG })}
-                />
-              </View>
+            {/* Food Search Input */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search-outline" size={18} color={colors.textMuted} style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search food (e.g. eggs, chicken, rice...)"
+                placeholderTextColor={colors.textMuted}
+                value={newFood.name}
+                onChangeText={handleFoodNameChange}
+                autoFocus
+              />
+              {newFood.name.length > 0 && (
+                <TouchableOpacity onPress={() => { handleFoodNameChange(''); setSelectedDbFood(null); }}>
+                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+              )}
             </View>
 
-            <View style={styles.macroInputRow}>
-              <View style={styles.macroInput}>
-                <Text style={styles.macroInputLabel}>Carbs (g)</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={colors.textMuted}
-                  value={newFood.carbsG}
-                  onChangeText={(carbsG) => setNewFood({ ...newFood, carbsG })}
+            {/* Search Results */}
+            {foodSearchResults.length > 0 && !selectedDbFood && (
+              <View style={styles.searchResults}>
+                <FlatList
+                  data={foodSearchResults}
+                  keyExtractor={(item) => item.id}
+                  keyboardShouldPersistTaps="handled"
+                  style={{ maxHeight: 240 }}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.searchResultItem}
+                      onPress={() => selectFoodFromDb(item)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.searchResultLeft}>
+                        <Text style={styles.searchResultName}>{item.name}</Text>
+                        <Text style={styles.searchResultServing}>
+                          {item.servingSize} {item.servingUnit}
+                        </Text>
+                      </View>
+                      <View style={styles.searchResultMacros}>
+                        <Text style={styles.searchResultCal}>{item.calories} cal</Text>
+                        <Text style={styles.searchResultMacroDetail}>
+                          <Text style={{ color: colors.secondary }}>{item.protein}p</Text>
+                          {' '}<Text style={{ color: colors.gradientCool }}>{item.carbs}c</Text>
+                          {' '}<Text style={{ color: colors.warning }}>{item.fat}f</Text>
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
                 />
               </View>
-              <View style={styles.macroInput}>
-                <Text style={styles.macroInputLabel}>Fat (g)</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={colors.textMuted}
-                  value={newFood.fatG}
-                  onChangeText={(fatG) => setNewFood({ ...newFood, fatG })}
-                />
+            )}
+
+            {/* Selected food summary */}
+            {selectedDbFood && (
+              <View style={styles.selectedFoodCard}>
+                <View style={styles.selectedFoodHeader}>
+                  <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+                  <Text style={styles.selectedFoodName}>{selectedDbFood.name}</Text>
+                </View>
+                <View style={styles.servingRow}>
+                  <Text style={styles.servingLabel}>Servings:</Text>
+                  <View style={styles.servingControls}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const m = Math.max(0.5, (parseFloat(servingMultiplier) || 1) - 0.5);
+                        updateServingMultiplier(m.toString());
+                      }}
+                    >
+                      <View style={styles.servingBtn}>
+                        <Ionicons name="remove" size={16} color={colors.accent} />
+                      </View>
+                    </TouchableOpacity>
+                    <TextInput
+                      style={styles.servingInput}
+                      value={servingMultiplier}
+                      onChangeText={updateServingMultiplier}
+                      keyboardType="decimal-pad"
+                      selectTextOnFocus
+                    />
+                    <TouchableOpacity
+                      onPress={() => {
+                        const m = (parseFloat(servingMultiplier) || 1) + 0.5;
+                        updateServingMultiplier(m.toString());
+                      }}
+                    >
+                      <View style={styles.servingBtn}>
+                        <Ionicons name="add" size={16} color={colors.accent} />
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.servingUnit}>
+                    x {selectedDbFood.servingSize} {selectedDbFood.servingUnit}
+                  </Text>
+                </View>
+                <View style={styles.macroPreview}>
+                  <View style={styles.macroPreviewItem}>
+                    <Text style={styles.macroPreviewValue}>{newFood.calories}</Text>
+                    <Text style={styles.macroPreviewLabel}>cal</Text>
+                  </View>
+                  <View style={[styles.macroPreviewItem, { borderLeftWidth: 1, borderLeftColor: colors.border }]}>
+                    <Text style={[styles.macroPreviewValue, { color: colors.secondary }]}>{newFood.proteinG}g</Text>
+                    <Text style={styles.macroPreviewLabel}>protein</Text>
+                  </View>
+                  <View style={[styles.macroPreviewItem, { borderLeftWidth: 1, borderLeftColor: colors.border }]}>
+                    <Text style={[styles.macroPreviewValue, { color: colors.gradientCool }]}>{newFood.carbsG}g</Text>
+                    <Text style={styles.macroPreviewLabel}>carbs</Text>
+                  </View>
+                  <View style={[styles.macroPreviewItem, { borderLeftWidth: 1, borderLeftColor: colors.border }]}>
+                    <Text style={[styles.macroPreviewValue, { color: colors.warning }]}>{newFood.fatG}g</Text>
+                    <Text style={styles.macroPreviewLabel}>fat</Text>
+                  </View>
+                </View>
               </View>
-            </View>
+            )}
+
+            {/* Manual entry fallback (only if no db food selected and no search results) */}
+            {!selectedDbFood && foodSearchResults.length === 0 && newFood.name.length > 0 && (
+              <>
+                <Text style={styles.manualEntryHint}>No match found — enter macros manually:</Text>
+                <View style={styles.macroInputRow}>
+                  <View style={styles.macroInput}>
+                    <Text style={styles.macroInputLabel}>Calories</Text>
+                    <TextInput
+                      style={styles.input}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor={colors.textMuted}
+                      value={newFood.calories}
+                      onChangeText={(calories) => setNewFood({ ...newFood, calories })}
+                    />
+                  </View>
+                  <View style={styles.macroInput}>
+                    <Text style={styles.macroInputLabel}>Protein (g)</Text>
+                    <TextInput
+                      style={styles.input}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor={colors.textMuted}
+                      value={newFood.proteinG}
+                      onChangeText={(proteinG) => setNewFood({ ...newFood, proteinG })}
+                    />
+                  </View>
+                </View>
+                <View style={styles.macroInputRow}>
+                  <View style={styles.macroInput}>
+                    <Text style={styles.macroInputLabel}>Carbs (g)</Text>
+                    <TextInput
+                      style={styles.input}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor={colors.textMuted}
+                      value={newFood.carbsG}
+                      onChangeText={(carbsG) => setNewFood({ ...newFood, carbsG })}
+                    />
+                  </View>
+                  <View style={styles.macroInput}>
+                    <Text style={styles.macroInputLabel}>Fat (g)</Text>
+                    <TextInput
+                      style={styles.input}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor={colors.textMuted}
+                      value={newFood.fatG}
+                      onChangeText={(fatG) => setNewFood({ ...newFood, fatG })}
+                    />
+                  </View>
+                </View>
+              </>
+            )}
 
             <View style={styles.modalActions}>
               <PressableScale
                 style={styles.cancelButton}
-                onPress={() => setShowAddFood(false)}
+                onPress={() => {
+                  setShowAddFood(false);
+                  setFoodSearchResults([]);
+                  setSelectedDbFood(null);
+                }}
               >
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </PressableScale>
@@ -520,7 +685,7 @@ export function NutritionScreen({ navigation }: any) {
               </PressableScale>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -838,6 +1003,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderBottomWidth: 0,
     borderColor: colors.border,
+    maxHeight: '85%',
   },
   modalHandle: {
     width: 40,
@@ -851,12 +1017,167 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   modalTitle: {
     ...typography.h2,
     color: colors.text,
   },
+
+  // Food Search
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.inputBg,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.sm,
+  },
+  searchIcon: {
+    marginRight: spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    padding: spacing.lg,
+    paddingLeft: 0,
+    color: colors.text,
+    ...typography.body,
+  },
+  searchResults: {
+    backgroundColor: colors.cardLight,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  searchResultLeft: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  searchResultName: {
+    ...typography.body,
+    color: colors.text,
+  },
+  searchResultServing: {
+    ...typography.small,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  searchResultMacros: {
+    alignItems: 'flex-end',
+  },
+  searchResultCal: {
+    ...typography.bodyBold,
+    color: colors.text,
+    fontSize: 13,
+  },
+  searchResultMacroDetail: {
+    ...typography.small,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+
+  // Selected food card
+  selectedFoodCard: {
+    backgroundColor: colors.accentDim,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.accentSoft,
+  },
+  selectedFoodHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  selectedFoodName: {
+    ...typography.bodyBold,
+    color: colors.text,
+    flex: 1,
+  },
+  servingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  servingLabel: {
+    ...typography.captionBold,
+    color: colors.textSecondary,
+  },
+  servingControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  servingBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  servingInput: {
+    width: 40,
+    textAlign: 'center',
+    color: colors.text,
+    ...typography.bodyBold,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.sm,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  servingUnit: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  macroPreview: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  macroPreviewItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  macroPreviewValue: {
+    ...typography.bodyBold,
+    color: colors.text,
+    fontSize: 16,
+  },
+  macroPreviewLabel: {
+    ...typography.small,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+
+  manualEntryHint: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+    fontStyle: 'italic',
+  },
+
   input: {
     backgroundColor: colors.inputBg,
     borderRadius: borderRadius.md,

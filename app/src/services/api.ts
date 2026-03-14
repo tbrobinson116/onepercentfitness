@@ -68,4 +68,11 @@ export const api = {
     return request<any[]>(`/exercises${query}`);
   },
   getExercise: (id: string) => request<any>(`/exercises/${id}`),
+
+  // AI Coach
+  coachChat: (messages: { role: 'user' | 'assistant'; content: string }[], context?: any) =>
+    request<{ message: string; program?: any }>('/coach/chat', {
+      method: 'POST',
+      body: JSON.stringify({ messages, context }),
+    }),
 };
