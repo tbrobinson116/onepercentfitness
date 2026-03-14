@@ -4,12 +4,14 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
-import { colors, typography } from '../theme';
+import { colors, typography, spacing, borderRadius, shadows } from '../theme';
+import { ProgressRing, Card, PressableScale, SectionHeader, EmptyState } from '../components/ui';
 
 // Get day of week index (0 = Monday)
 function getDayOfWeek(date: Date): number {
@@ -39,8 +41,12 @@ export function HomeScreen({ navigation }: any) {
 
   const caloriesConsumed = todayNutrition?.totals.calories ?? 0;
   const proteinConsumed = todayNutrition?.totals.proteinG ?? 0;
+  const carbsConsumed = todayNutrition?.totals.carbsG ?? 0;
+  const fatConsumed = todayNutrition?.totals.fatG ?? 0;
   const calorieTarget = macroTargets.calories;
   const proteinTarget = macroTargets.proteinG;
+  const carbsTarget = macroTargets.carbsG;
+  const fatTarget = macroTargets.fatG;
 
   // Weekly streak calculation
   const last7 = getLast7Days();
@@ -53,12 +59,10 @@ export function HomeScreen({ navigation }: any) {
   const streakDate = new Date();
   while (true) {
     const dateStr = streakDate.toISOString().split('T')[0];
-    // Check if any workout completed on this day
     if (workoutDays.has(dateStr)) {
       streak++;
       streakDate.setDate(streakDate.getDate() - 1);
     } else if (dateStr === today) {
-      // Today doesn't count against streak if not done yet
       streakDate.setDate(streakDate.getDate() - 1);
     } else {
       break;
@@ -97,7 +101,6 @@ export function HomeScreen({ navigation }: any) {
     onRefresh();
   }, []);
 
-  const userName = profile?.name || onboardingData?.fitnessGoal ? '' : '';
   const greeting = getGreeting();
 
   function getGreeting(): string {
@@ -107,286 +110,539 @@ export function HomeScreen({ navigation }: any) {
     return 'Good evening';
   }
 
+  function getInitials(): string {
+    const name = profile?.name || '';
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return parts[0][0].toUpperCase();
+  }
+
+  function getMotivationalSubtitle(): string {
+    if (streak >= 7) return 'Unstoppable. Keep the streak alive.';
+    if (streak >= 3) return `${streak}-day streak. Momentum is building.`;
+    if (thisWeekCount > 0) return '1% better every day.';
+    return 'Today is a great day to start.';
+  }
+
   return (
     <ScrollView
       style={styles.container}
+      contentContainerStyle={styles.contentContainer}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.greeting}>
-          {greeting}{profile?.name ? `, ${profile.name}` : ''}
-        </Text>
-        <Text style={styles.subtitle}>1% better every day</Text>
-      </View>
-
-      {/* Weekly Streak */}
-      <View style={styles.card}>
-        <View style={styles.streakHeader}>
-          <View>
-            <Text style={styles.cardTitle}>This Week</Text>
-            <Text style={styles.streakCount}>
-              {thisWeekCount} workout{thisWeekCount !== 1 ? 's' : ''}
-              {streak > 1 ? ` · ${streak} day streak` : ''}
+      {/* Hero Header */}
+      <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.hero}>
+        <View style={styles.heroContent}>
+          <View style={styles.heroTextBlock}>
+            <Text style={styles.greeting}>
+              {greeting}{profile?.name ? ',' : ''}
             </Text>
+            {profile?.name ? (
+              <Text style={styles.heroName}>{profile.name}</Text>
+            ) : null}
+            <Text style={styles.motivationalSubtitle}>{getMotivationalSubtitle()}</Text>
           </View>
-          {weeklyVolume > 0 && (
-            <View style={styles.volumeBadge}>
-              <Text style={styles.volumeValue}>{(weeklyVolume / 1000).toFixed(1)}k</Text>
-              <Text style={styles.volumeLabel}>lbs vol</Text>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{getInitials()}</Text>
+          </View>
+        </View>
+        {/* Streak pill */}
+        {streak > 0 && (
+          <View style={styles.streakPill}>
+            <Ionicons name="flame" size={14} color={colors.warning} />
+            <Text style={styles.streakPillText}>{streak} day streak</Text>
+          </View>
+        )}
+      </Animated.View>
+
+      {/* Weekly Activity */}
+      <View style={styles.sectionPadding}>
+        <SectionHeader title="WEEKLY ACTIVITY" />
+        <Card entering={FadeInDown.delay(100).duration(400)}>
+          <View style={styles.weeklyHeader}>
+            <View>
+              <Text style={styles.weeklyCount}>
+                {thisWeekCount} workout{thisWeekCount !== 1 ? 's' : ''}
+              </Text>
             </View>
-          )}
-        </View>
-        <View style={styles.weekDots}>
-          {last7.map((date, i) => {
-            const isToday = date === today;
-            const didWorkout = workoutDays.has(date);
-            const dayIndex = getDayOfWeek(new Date(date + 'T12:00:00'));
-            return (
-              <View key={date} style={styles.dayColumn}>
-                <Text style={[styles.dayLabel, isToday && styles.dayLabelToday]}>
-                  {DAY_LABELS[dayIndex]}
-                </Text>
-                <View style={[
-                  styles.dayDot,
-                  didWorkout && styles.dayDotActive,
-                  isToday && !didWorkout && styles.dayDotToday,
-                ]}>
-                  {didWorkout && <Text style={styles.dayCheck}>✓</Text>}
-                </View>
+            {weeklyVolume > 0 && (
+              <View style={styles.volumeBadge}>
+                <Ionicons name="trending-up" size={14} color={colors.accent} style={{ marginRight: spacing.xs }} />
+                <Text style={styles.volumeValue}>{(weeklyVolume / 1000).toFixed(1)}k</Text>
+                <Text style={styles.volumeLabel}> lbs</Text>
               </View>
-            );
-          })}
-        </View>
+            )}
+          </View>
+          <View style={styles.weekDots}>
+            {last7.map((date, i) => {
+              const isToday = date === today;
+              const didWorkout = workoutDays.has(date);
+              const dayIndex = getDayOfWeek(new Date(date + 'T12:00:00'));
+              return (
+                <View key={date} style={styles.dayColumn}>
+                  <Text style={[styles.dayLabel, isToday && styles.dayLabelToday]}>
+                    {DAY_LABELS[dayIndex]}
+                  </Text>
+                  <View style={[
+                    styles.dayDot,
+                    didWorkout && styles.dayDotActive,
+                    isToday && !didWorkout && styles.dayDotToday,
+                  ]}>
+                    {didWorkout ? (
+                      <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                    ) : null}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </Card>
       </View>
 
-      {/* Today's Progress */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Today's Nutrition</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{caloriesConsumed}</Text>
-            <Text style={styles.statLabel}>/ {calorieTarget} cal</Text>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${Math.min((caloriesConsumed / calorieTarget) * 100, 100)}%` },
-                ]}
-              />
+      {/* Nutrition Progress */}
+      <View style={styles.sectionPadding}>
+        <SectionHeader title="TODAY'S NUTRITION" />
+        <Card entering={FadeInDown.delay(200).duration(400)}>
+          <View style={styles.macroRow}>
+            <View style={styles.macroItem}>
+              <ProgressRing
+                progress={calorieTarget > 0 ? caloriesConsumed / calorieTarget : 0}
+                size={64}
+                strokeWidth={5}
+                color={colors.accent}
+              >
+                <Text style={styles.macroRingValue}>{caloriesConsumed}</Text>
+              </ProgressRing>
+              <Text style={styles.macroLabel}>Calories</Text>
+              <Text style={styles.macroTarget}>/ {calorieTarget}</Text>
+            </View>
+            <View style={styles.macroItem}>
+              <ProgressRing
+                progress={proteinTarget > 0 ? proteinConsumed / proteinTarget : 0}
+                size={64}
+                strokeWidth={5}
+                color={colors.secondary}
+              >
+                <Text style={styles.macroRingValue}>{proteinConsumed}</Text>
+              </ProgressRing>
+              <Text style={styles.macroLabel}>Protein</Text>
+              <Text style={styles.macroTarget}>/ {proteinTarget}g</Text>
+            </View>
+            <View style={styles.macroItem}>
+              <ProgressRing
+                progress={carbsTarget > 0 ? carbsConsumed / carbsTarget : 0}
+                size={64}
+                strokeWidth={5}
+                color={colors.gradientCool}
+              >
+                <Text style={styles.macroRingValue}>{carbsConsumed}</Text>
+              </ProgressRing>
+              <Text style={styles.macroLabel}>Carbs</Text>
+              <Text style={styles.macroTarget}>/ {carbsTarget}g</Text>
+            </View>
+            <View style={styles.macroItem}>
+              <ProgressRing
+                progress={fatTarget > 0 ? fatConsumed / fatTarget : 0}
+                size={64}
+                strokeWidth={5}
+                color={colors.gradientWarm}
+              >
+                <Text style={styles.macroRingValue}>{fatConsumed}</Text>
+              </ProgressRing>
+              <Text style={styles.macroLabel}>Fat</Text>
+              <Text style={styles.macroTarget}>/ {fatTarget}g</Text>
             </View>
           </View>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{proteinConsumed}g</Text>
-            <Text style={styles.statLabel}>/ {proteinTarget}g protein</Text>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  styles.proteinFill,
-                  { width: `${Math.min((proteinConsumed / proteinTarget) * 100, 100)}%` },
-                ]}
-              />
-            </View>
-          </View>
-        </View>
+        </Card>
       </View>
 
       {/* Today's Workout */}
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => navigation.navigate('Workouts')}
-      >
-        <Text style={styles.cardTitle}>Workout</Text>
-        {todayWorkout ? (
-          <View>
-            <Text style={styles.workoutName}>{todayWorkout.name}</Text>
-            <Text style={styles.workoutDetail}>
-              {todayWorkout.exercises.length} exercises
-              {todayWorkout.isCompleted ? ' — Completed ✓' : ' — Tap to start'}
-            </Text>
-          </View>
-        ) : (
-          <View>
-            <Text style={styles.emptyText}>No workout scheduled today</Text>
-            <Text style={styles.actionText}>Tap to start a workout or generate a program</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+      <View style={styles.sectionPadding}>
+        <SectionHeader title="TODAY'S WORKOUT" />
+        <Card
+          entering={FadeInDown.delay(300).duration(400)}
+          onPress={() => navigation.navigate('Workouts')}
+        >
+          {todayWorkout ? (
+            <View style={styles.workoutCardContent}>
+              <View style={styles.workoutIconContainer}>
+                <Ionicons name="barbell-outline" size={28} color={colors.accent} />
+              </View>
+              <View style={styles.workoutInfo}>
+                <Text style={styles.workoutName}>{todayWorkout.name}</Text>
+                <Text style={styles.workoutDetail}>
+                  {todayWorkout.exercises.length} exercises
+                  {todayWorkout.isCompleted ? ' — Completed' : ''}
+                </Text>
+              </View>
+              {todayWorkout.isCompleted ? (
+                <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+              ) : (
+                <View style={styles.startButton}>
+                  <Ionicons name="play" size={16} color="#fff" />
+                  <Text style={styles.startButtonText}>Start</Text>
+                </View>
+              )}
+            </View>
+          ) : (
+            <View style={styles.workoutCardContent}>
+              <View style={styles.workoutIconContainer}>
+                <Ionicons name="barbell-outline" size={28} color={colors.textMuted} />
+              </View>
+              <View style={styles.workoutInfo}>
+                <Text style={styles.workoutNameEmpty}>No workout scheduled</Text>
+                <Text style={styles.workoutDetail}>Tap to start or generate a program</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </View>
+          )}
+        </Card>
+      </View>
 
       {/* Active Goals */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Active Goals</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Goals')}>
-            <Text style={styles.seeAll}>See All</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.sectionPadding}>
+        <SectionHeader
+          title="ACTIVE GOALS"
+          action="See All"
+          onAction={() => navigation.navigate('Goals')}
+        />
         {activeGoals.length > 0 ? (
-          activeGoals.slice(0, 3).map((goal) => (
-            <View key={goal.id} style={styles.goalRow}>
-              <View style={styles.goalInfo}>
-                <Text style={styles.goalTitle}>{goal.title}</Text>
-                <Text style={styles.goalType}>{goal.type}</Text>
-              </View>
-              <View style={styles.goalProgress}>
-                <Text style={styles.goalPercent}>{goal.progressPercent}%</Text>
-                <View style={styles.miniProgress}>
-                  <View
-                    style={[styles.miniProgressFill, { width: `${goal.progressPercent}%` }]}
-                  />
+          activeGoals.slice(0, 3).map((goal, index) => (
+            <Card
+              key={goal.id}
+              entering={FadeInDown.delay(400 + index * 100).duration(400)}
+            >
+              <View style={styles.goalRow}>
+                <View style={styles.goalInfo}>
+                  <Text style={styles.goalTitle}>{goal.title}</Text>
+                  <Text style={styles.goalType}>{goal.type}</Text>
+                </View>
+                <View style={styles.goalProgress}>
+                  <ProgressRing
+                    progress={(goal.progressPercent ?? 0) / 100}
+                    size={44}
+                    strokeWidth={4}
+                    color={colors.accent}
+                  >
+                    <Text style={styles.goalPercent}>{goal.progressPercent}%</Text>
+                  </ProgressRing>
                 </View>
               </View>
-            </View>
+            </Card>
           ))
         ) : (
-          <TouchableOpacity onPress={() => navigation.navigate('Goals')}>
-            <Text style={styles.emptyText}>No goals set yet</Text>
-            <Text style={styles.actionText}>Tap to set your first goal</Text>
-          </TouchableOpacity>
+          <Card entering={FadeInDown.delay(400).duration(400)}>
+            <EmptyState
+              icon="flag-outline"
+              title="No goals set yet"
+              subtitle="Set your first goal to track your progress"
+              actionLabel="Set a Goal"
+              onAction={() => navigation.navigate('Goals')}
+            />
+          </Card>
         )}
       </View>
 
       {/* Quick Actions */}
-      <View style={styles.quickActions}>
-        <TouchableOpacity
-          style={styles.quickAction}
-          onPress={() => navigation.navigate('Workouts')}
-        >
-          <Text style={styles.quickActionIcon}>💪</Text>
-          <Text style={styles.quickActionText}>Start Workout</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.quickAction}
-          onPress={() => navigation.navigate('Nutrition')}
-        >
-          <Text style={styles.quickActionIcon}>🍽️</Text>
-          <Text style={styles.quickActionText}>Log Meal</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.quickAction}
-          onPress={() => navigation.navigate('Profile')}
-        >
-          <Text style={styles.quickActionIcon}>📏</Text>
-          <Text style={styles.quickActionText}>Log Metrics</Text>
-        </TouchableOpacity>
+      <View style={styles.sectionPadding}>
+        <SectionHeader title="QUICK ACTIONS" />
+        <Animated.View entering={FadeInDown.delay(600).duration(400)} style={styles.quickActions}>
+          <PressableScale
+            onPress={() => navigation.navigate('Workouts')}
+            style={styles.quickActionTile}
+          >
+            <View style={[styles.quickActionIconBg, { backgroundColor: colors.accentDim }]}>
+              <Ionicons name="barbell-outline" size={28} color={colors.accent} />
+            </View>
+            <Text style={styles.quickActionText}>Start{'\n'}Workout</Text>
+          </PressableScale>
+          <PressableScale
+            onPress={() => navigation.navigate('Nutrition')}
+            style={styles.quickActionTile}
+          >
+            <View style={[styles.quickActionIconBg, { backgroundColor: colors.secondaryDim }]}>
+              <Ionicons name="restaurant-outline" size={28} color={colors.secondary} />
+            </View>
+            <Text style={styles.quickActionText}>Log{'\n'}Meal</Text>
+          </PressableScale>
+          <PressableScale
+            onPress={() => navigation.navigate('Profile')}
+            style={styles.quickActionTile}
+          >
+            <View style={[styles.quickActionIconBg, { backgroundColor: colors.warningDim }]}>
+              <Ionicons name="body-outline" size={28} color={colors.warning} />
+            </View>
+            <Text style={styles.quickActionText}>Log{'\n'}Metrics</Text>
+          </PressableScale>
+        </Animated.View>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { padding: 24, paddingTop: 60 },
-  greeting: { ...typography.h1, color: colors.text },
-  subtitle: { ...typography.body, color: colors.textSecondary, marginTop: 4 },
-  card: {
-    backgroundColor: colors.card,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 16,
-    padding: 20,
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  contentContainer: {
+    paddingBottom: spacing.xxxl + spacing.lg,
   },
-  cardTitle: { ...typography.h3, color: colors.text, marginBottom: 12 },
-  seeAll: { ...typography.body, color: colors.accent },
+  sectionPadding: {
+    paddingHorizontal: spacing.lg,
+  },
 
-  // Weekly Streak
-  streakHeader: {
+  // Hero Header
+  hero: {
+    paddingHorizontal: spacing.xxl,
+    paddingTop: 64,
+    paddingBottom: spacing.xxl,
+    backgroundColor: colors.cardElevated,
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
+    marginBottom: spacing.lg,
+    ...shadows.card,
+  },
+  heroContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  streakCount: { ...typography.caption, color: colors.accent, marginTop: -8, marginBottom: 12 },
-  volumeBadge: {
-    backgroundColor: colors.accent + '18',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    alignItems: 'center',
+  heroTextBlock: {
+    flex: 1,
+    marginRight: spacing.lg,
   },
-  volumeValue: { ...typography.bodyBold, color: colors.accent },
-  volumeLabel: { ...typography.small, color: colors.textSecondary },
+  greeting: {
+    ...typography.body,
+    color: colors.textSecondary,
+  },
+  heroName: {
+    ...typography.hero,
+    color: colors.text,
+    marginTop: spacing.xs,
+  },
+  motivationalSubtitle: {
+    ...typography.body,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
+  },
+  avatarCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.accentSoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  avatarText: {
+    ...typography.bodyBold,
+    color: colors.accent,
+  },
+  streakPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: colors.warningDim,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: borderRadius.full,
+    marginTop: spacing.lg,
+  },
+  streakPillText: {
+    ...typography.captionBold,
+    color: colors.warning,
+    marginLeft: spacing.xs,
+  },
+
+  // Weekly Activity
+  weeklyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  weeklyCount: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  volumeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.accentDim,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+  },
+  volumeValue: {
+    ...typography.captionBold,
+    color: colors.accent,
+  },
+  volumeLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
   weekDots: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  dayColumn: { alignItems: 'center', flex: 1 },
-  dayLabel: { ...typography.small, color: colors.textSecondary, marginBottom: 6 },
-  dayLabelToday: { color: colors.accent, fontWeight: '700' },
+  dayColumn: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  dayLabel: {
+    ...typography.small,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+  },
+  dayLabelToday: {
+    color: colors.accent,
+    fontWeight: '700',
+  },
   dayDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.full,
     backgroundColor: colors.inputBg,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  dayDotActive: { backgroundColor: colors.success, borderColor: colors.success },
-  dayDotToday: { borderColor: colors.accent },
-  dayCheck: { color: '#fff', fontWeight: '700', fontSize: 14 },
-
-  // Stats
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  stat: { flex: 1, marginRight: 12 },
-  statValue: { ...typography.h2, color: colors.text },
-  statLabel: { ...typography.caption, color: colors.textSecondary, marginBottom: 8 },
-  progressBar: {
-    height: 6,
-    backgroundColor: colors.border,
-    borderRadius: 3,
-    overflow: 'hidden',
+  dayDotActive: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
   },
-  progressFill: { height: '100%', backgroundColor: colors.accent, borderRadius: 3 },
-  proteinFill: { backgroundColor: colors.secondary },
+  dayDotToday: {
+    borderColor: colors.accent,
+  },
 
-  workoutName: { ...typography.h3, color: colors.text },
-  workoutDetail: { ...typography.body, color: colors.textSecondary, marginTop: 4 },
-  emptyText: { ...typography.body, color: colors.textSecondary },
-  actionText: { ...typography.caption, color: colors.accent, marginTop: 4 },
+  // Nutrition Macro Rings
+  macroRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  macroItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  macroRingValue: {
+    ...typography.smallBold,
+    color: colors.text,
+  },
+  macroLabel: {
+    ...typography.small,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  macroTarget: {
+    ...typography.small,
+    color: colors.textMuted,
+  },
 
+  // Today's Workout
+  workoutCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  workoutIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.accentDim,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.lg,
+  },
+  workoutInfo: {
+    flex: 1,
+  },
+  workoutName: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  workoutNameEmpty: {
+    ...typography.bodyBold,
+    color: colors.textSecondary,
+  },
+  workoutDetail: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  startButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: borderRadius.full,
+    ...shadows.button,
+  },
+  startButtonText: {
+    ...typography.captionBold,
+    color: '#fff',
+    marginLeft: spacing.xs,
+  },
+
+  // Goals
   goalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
-  goalInfo: { flex: 1 },
-  goalTitle: { ...typography.body, color: colors.text, fontWeight: '600' },
-  goalType: { ...typography.caption, color: colors.textSecondary },
-  goalProgress: { alignItems: 'flex-end', width: 80 },
-  goalPercent: { ...typography.body, color: colors.accent, fontWeight: '600' },
-  miniProgress: {
-    width: 60,
-    height: 4,
-    backgroundColor: colors.border,
-    borderRadius: 2,
-    marginTop: 4,
-    overflow: 'hidden',
+  goalInfo: {
+    flex: 1,
+    marginRight: spacing.lg,
   },
-  miniProgressFill: { height: '100%', backgroundColor: colors.accent, borderRadius: 2 },
+  goalTitle: {
+    ...typography.bodyBold,
+    color: colors.text,
+  },
+  goalType: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  goalProgress: {
+    alignItems: 'center',
+  },
+  goalPercent: {
+    ...typography.small,
+    color: colors.accent,
+    fontWeight: '700',
+  },
 
+  // Quick Actions
   quickActions: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginBottom: 32,
+    justifyContent: 'space-between',
+    gap: spacing.md,
   },
-  quickAction: {
+  quickActionTile: {
     flex: 1,
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
     alignItems: 'center',
-    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.cardLight,
   },
-  quickActionIcon: { fontSize: 28, marginBottom: 8 },
-  quickActionText: { ...typography.caption, color: colors.text, textAlign: 'center' },
+  quickActionIconBg: {
+    width: 52,
+    height: 52,
+    borderRadius: borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  quickActionText: {
+    ...typography.captionBold,
+    color: colors.text,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
 });

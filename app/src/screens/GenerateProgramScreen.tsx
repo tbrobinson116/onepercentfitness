@@ -11,33 +11,28 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
-import { colors, typography } from '../theme';
+import { colors, typography, spacing, borderRadius, shadows } from '../theme';
+import { PressableScale, Card, ChipSelector } from '../components/ui';
 import type { Equipment } from '../types';
 
-const EQUIPMENT_OPTIONS: { id: Equipment; label: string }[] = [
-  { id: 'barbell', label: 'Barbell' },
-  { id: 'dumbbell', label: 'Dumbbells' },
-  { id: 'cable', label: 'Cables' },
-  { id: 'bodyweight', label: 'Bodyweight' },
-  { id: 'kettlebell', label: 'Kettlebells' },
-  { id: 'band', label: 'Bands' },
+const EQUIPMENT_OPTIONS: { id: Equipment; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { id: 'barbell', label: 'Barbell', icon: 'barbell-outline' },
+  { id: 'dumbbell', label: 'Dumbbells', icon: 'fitness-outline' },
+  { id: 'cable', label: 'Cables', icon: 'git-branch-outline' },
+  { id: 'bodyweight', label: 'Bodyweight', icon: 'body-outline' },
+  { id: 'kettlebell', label: 'Kettlebells', icon: 'ellipse-outline' },
+  { id: 'band', label: 'Bands', icon: 'swap-horizontal-outline' },
 ];
 
 const MACHINE_OPTIONS = [
-  'Smith Machine',
-  'Leg Press',
-  'Leg Extension',
-  'Leg Curl',
-  'Lat Pulldown',
-  'Chest Press Machine',
-  'Cable Crossover',
-  'Pec Deck',
-  'Shoulder Press Machine',
-  'Seated Row Machine',
-  'Hip Abductor/Adductor',
-  'Hack Squat',
+  'Smith Machine', 'Leg Press', 'Leg Extension', 'Leg Curl',
+  'Lat Pulldown', 'Chest Press Machine', 'Cable Crossover',
+  'Pec Deck', 'Shoulder Press Machine', 'Seated Row Machine',
+  'Hip Abductor/Adductor', 'Hack Squat',
 ];
 
 export function GenerateProgramScreen({ navigation }: any) {
@@ -92,7 +87,6 @@ export function GenerateProgramScreen({ navigation }: any) {
       ].join('. ');
 
       const fullPreferences = [preferences, equipmentNotes].filter(Boolean).join('. ');
-
       const allEquipment = [...selectedEquipment];
       if (selectedMachines.length > 0 && !allEquipment.includes('machine')) {
         allEquipment.push('machine');
@@ -119,187 +113,253 @@ export function GenerateProgramScreen({ navigation }: any) {
     setLoading(false);
   };
 
-  return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtn}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Generate AI Program</Text>
-        </View>
+  const activeGoals = goals.filter((g) => g.status === 'active');
 
-        <Text style={styles.desc}>
-          Our AI will create a personalized workout program based on your goals, body composition, and preferences.
-        </Text>
+  return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+        {/* Header */}
+        <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <View style={styles.headerIcon}>
+              <Ionicons name="sparkles" size={24} color={colors.accent} />
+            </View>
+            <Text style={styles.title}>AI Program Builder</Text>
+            <Text style={styles.desc}>
+              Tell me about your setup and I'll design your perfect program.
+            </Text>
+          </View>
+        </Animated.View>
+
+        {/* AI Coach Bubble */}
+        <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.coachBubble}>
+          <View style={styles.coachHeader}>
+            <Ionicons name="sparkles" size={14} color={colors.accent} />
+            <Text style={styles.coachLabel}>Coach</Text>
+          </View>
+          <Text style={styles.coachText}>
+            Let's build your program. I'll need to know your experience, schedule, and equipment.
+          </Text>
+        </Animated.View>
 
         {/* Experience Level */}
-        <Text style={styles.label}>Experience Level</Text>
-        <View style={styles.optionRow}>
-          {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
-            <TouchableOpacity
-              key={level}
-              style={[styles.option, experience === level && styles.optionActive]}
-              onPress={() => setExperience(level)}
-            >
-              <Text style={[styles.optionText, experience === level && styles.optionTextActive]}>
-                {level.charAt(0).toUpperCase() + level.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+          <Text style={styles.label}>
+            <Ionicons name="trending-up" size={14} color={colors.accent} /> Experience Level
+          </Text>
+          <View style={styles.optionRow}>
+            {([
+              { key: 'beginner', label: 'Beginner', icon: 'leaf-outline' as const },
+              { key: 'intermediate', label: 'Intermediate', icon: 'barbell-outline' as const },
+              { key: 'advanced', label: 'Advanced', icon: 'trophy-outline' as const },
+            ] as const).map((level) => (
+              <PressableScale
+                key={level.key}
+                onPress={() => setExperience(level.key)}
+                style={[styles.option, experience === level.key && styles.optionActive]}
+              >
+                <Ionicons
+                  name={level.icon}
+                  size={18}
+                  color={experience === level.key ? colors.accent : colors.textSecondary}
+                />
+                <Text style={[styles.optionText, experience === level.key && styles.optionTextActive]}>
+                  {level.label}
+                </Text>
+              </PressableScale>
+            ))}
+          </View>
+        </Animated.View>
 
         {/* Days per Week */}
-        <Text style={styles.label}>Days per Week</Text>
-        <View style={styles.optionRow}>
-          {[2, 3, 4, 5, 6].map((d) => (
-            <TouchableOpacity
-              key={d}
-              style={[styles.option, daysPerWeek === d && styles.optionActive]}
-              onPress={() => setDaysPerWeek(d)}
-            >
-              <Text style={[styles.optionText, daysPerWeek === d && styles.optionTextActive]}>{d}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+          <Text style={styles.label}>
+            <Ionicons name="calendar-outline" size={14} color={colors.accent} /> Days per Week
+          </Text>
+          <View style={styles.optionRow}>
+            {[2, 3, 4, 5, 6].map((d) => (
+              <PressableScale
+                key={d}
+                onPress={() => setDaysPerWeek(d)}
+                style={[styles.numOption, daysPerWeek === d && styles.optionActive]}
+              >
+                <Text style={[styles.numText, daysPerWeek === d && styles.optionTextActive]}>{d}</Text>
+              </PressableScale>
+            ))}
+          </View>
+        </Animated.View>
 
-        {/* Session Duration */}
-        <Text style={styles.label}>Session Duration (minutes)</Text>
-        <View style={styles.optionRow}>
-          {[30, 45, 60, 75, 90].map((d) => (
-            <TouchableOpacity
-              key={d}
-              style={[styles.option, duration === d && styles.optionActive]}
-              onPress={() => setDuration(d)}
-            >
-              <Text style={[styles.optionText, duration === d && styles.optionTextActive]}>{d}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* Duration */}
+        <Animated.View entering={FadeInDown.delay(400).duration(400)}>
+          <Text style={styles.label}>
+            <Ionicons name="time-outline" size={14} color={colors.accent} /> Session Duration
+          </Text>
+          <View style={styles.optionRow}>
+            {[30, 45, 60, 75, 90].map((d) => (
+              <PressableScale
+                key={d}
+                onPress={() => setDuration(d)}
+                style={[styles.numOption, duration === d && styles.optionActive]}
+              >
+                <Text style={[styles.numText, duration === d && styles.optionTextActive]}>{d}m</Text>
+              </PressableScale>
+            ))}
+          </View>
+        </Animated.View>
 
         {/* Equipment */}
-        <Text style={styles.label}>Equipment</Text>
-        <View style={styles.equipmentGrid}>
-          {EQUIPMENT_OPTIONS.map((eq) => (
-            <TouchableOpacity
-              key={eq.id}
-              style={[styles.equipChip, selectedEquipment.includes(eq.id) && styles.equipChipActive]}
-              onPress={() => toggleEquipment(eq.id)}
-            >
-              <Text style={[styles.equipText, selectedEquipment.includes(eq.id) && styles.equipTextActive]}>
-                {eq.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Specific Machines */}
-        <TouchableOpacity
-          style={styles.machineToggle}
-          onPress={() => setShowMachines(!showMachines)}
-        >
-          <Text style={styles.machineToggleText}>
-            {showMachines ? '▾' : '▸'} Specific Machines ({selectedMachines.length} selected)
+        <Animated.View entering={FadeInDown.delay(500).duration(400)}>
+          <Text style={styles.label}>
+            <Ionicons name="construct-outline" size={14} color={colors.accent} /> Equipment
           </Text>
-        </TouchableOpacity>
-
-        {showMachines && (
-          <View style={styles.machineGrid}>
-            {MACHINE_OPTIONS.map((machine) => (
-              <TouchableOpacity
-                key={machine}
-                style={[styles.equipChip, selectedMachines.includes(machine) && styles.equipChipActive]}
-                onPress={() => toggleMachine(machine)}
+          <View style={styles.equipGrid}>
+            {EQUIPMENT_OPTIONS.map((eq) => (
+              <PressableScale
+                key={eq.id}
+                onPress={() => toggleEquipment(eq.id)}
+                style={[styles.equipChip, selectedEquipment.includes(eq.id) && styles.equipChipActive]}
               >
-                <Text style={[styles.equipText, selectedMachines.includes(machine) && styles.equipTextActive]}>
-                  {machine}
+                <Ionicons
+                  name={eq.icon}
+                  size={16}
+                  color={selectedEquipment.includes(eq.id) ? colors.accent : colors.textSecondary}
+                />
+                <Text style={[styles.equipText, selectedEquipment.includes(eq.id) && styles.equipTextActive]}>
+                  {eq.label}
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             ))}
           </View>
-        )}
 
-        {/* Custom Equipment */}
-        <View style={styles.customEquipRow}>
-          <TextInput
-            style={[styles.input, { flex: 1, marginBottom: 0 }]}
-            placeholder="Add other equipment..."
-            placeholderTextColor={colors.textSecondary}
-            value={customEquipment}
-            onChangeText={setCustomEquipment}
-            onSubmitEditing={addCustomEquipment}
-            returnKeyType="done"
-          />
-          <TouchableOpacity style={styles.addCustomBtn} onPress={addCustomEquipment}>
-            <Text style={styles.addCustomText}>+</Text>
+          {/* Machines Toggle */}
+          <TouchableOpacity style={styles.machineToggle} onPress={() => setShowMachines(!showMachines)}>
+            <Ionicons
+              name={showMachines ? 'chevron-down' : 'chevron-forward'}
+              size={18}
+              color={colors.accent}
+            />
+            <Text style={styles.machineToggleText}>
+              Specific Machines ({selectedMachines.length})
+            </Text>
           </TouchableOpacity>
-        </View>
-        {customItems.length > 0 && (
-          <View style={[styles.equipmentGrid, { marginTop: 8 }]}>
-            {customItems.map((item) => (
-              <TouchableOpacity
-                key={item}
-                style={[styles.equipChip, styles.equipChipActive]}
-                onPress={() => removeCustomItem(item)}
-              >
-                <Text style={[styles.equipText, styles.equipTextActive]}>
-                  {item} ✕
-                </Text>
-              </TouchableOpacity>
-            ))}
+
+          {showMachines && (
+            <View style={styles.equipGrid}>
+              {MACHINE_OPTIONS.map((machine) => (
+                <TouchableOpacity
+                  key={machine}
+                  style={[styles.equipChip, selectedMachines.includes(machine) && styles.equipChipActive]}
+                  onPress={() => toggleMachine(machine)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.equipText, selectedMachines.includes(machine) && styles.equipTextActive]}>
+                    {machine}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Custom Equipment */}
+          <View style={styles.customRow}>
+            <TextInput
+              style={styles.customInput}
+              placeholder="Other equipment..."
+              placeholderTextColor={colors.textMuted}
+              value={customEquipment}
+              onChangeText={setCustomEquipment}
+              onSubmitEditing={addCustomEquipment}
+              returnKeyType="done"
+            />
+            <TouchableOpacity style={styles.addCustomBtn} onPress={addCustomEquipment}>
+              <Ionicons name="add" size={22} color={colors.text} />
+            </TouchableOpacity>
           </View>
-        )}
+          {customItems.length > 0 && (
+            <View style={[styles.equipGrid, { marginTop: spacing.sm }]}>
+              {customItems.map((item) => (
+                <TouchableOpacity
+                  key={item}
+                  style={[styles.equipChip, styles.equipChipActive]}
+                  onPress={() => removeCustomItem(item)}
+                >
+                  <Text style={styles.equipTextActive}>{item}</Text>
+                  <Ionicons name="close" size={14} color={colors.accent} style={{ marginLeft: 4 }} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </Animated.View>
 
         {/* Injuries */}
-        <Text style={styles.label}>Injuries / Limitations</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., bad left knee, shoulder impingement"
-          placeholderTextColor={colors.textSecondary}
-          value={injuries}
-          onChangeText={setInjuries}
-        />
+        <Animated.View entering={FadeInDown.delay(600).duration(400)}>
+          <Text style={styles.label}>
+            <Ionicons name="medical-outline" size={14} color={colors.accent} /> Injuries / Limitations
+          </Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g., bad left knee, shoulder impingement"
+            placeholderTextColor={colors.textMuted}
+            value={injuries}
+            onChangeText={setInjuries}
+          />
+        </Animated.View>
 
         {/* Preferences */}
-        <Text style={styles.label}>Preferences / Notes</Text>
-        <TextInput
-          style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
-          placeholder="e.g., prefer compound movements, like supersets, want to focus on arms"
-          placeholderTextColor={colors.textSecondary}
-          value={preferences}
-          onChangeText={setPreferences}
-          multiline
-        />
+        <Animated.View entering={FadeInDown.delay(700).duration(400)}>
+          <Text style={styles.label}>
+            <Ionicons name="chatbubble-outline" size={14} color={colors.accent} /> Preferences
+          </Text>
+          <TextInput
+            style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
+            placeholder="e.g., prefer compound movements, like supersets, want to focus on arms"
+            placeholderTextColor={colors.textMuted}
+            value={preferences}
+            onChangeText={setPreferences}
+            multiline
+          />
+        </Animated.View>
 
-        {/* Active Goals Info */}
-        {goals.filter((g) => g.status === 'active').length > 0 && (
-          <View style={styles.infoCard}>
-            <Text style={styles.infoTitle}>Your Active Goals</Text>
-            {goals.filter((g) => g.status === 'active').map((g) => (
-              <Text key={g.id} style={styles.infoItem}>• {g.title}</Text>
+        {/* Active Goals */}
+        {activeGoals.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(800).duration(400)} style={styles.goalsCard}>
+            <View style={styles.goalsHeader}>
+              <Ionicons name="trophy-outline" size={16} color={colors.accent} />
+              <Text style={styles.goalsTitle}>Your Active Goals</Text>
+            </View>
+            {activeGoals.map((g) => (
+              <View key={g.id} style={styles.goalItem}>
+                <Ionicons name="checkmark-circle" size={14} color={colors.secondary} />
+                <Text style={styles.goalText}>{g.title}</Text>
+              </View>
             ))}
-            <Text style={styles.infoNote}>These will be factored into your program.</Text>
-          </View>
+            <Text style={styles.goalsNote}>These will be factored into your program.</Text>
+          </Animated.View>
         )}
 
         {/* Generate Button */}
-        <TouchableOpacity
-          style={[styles.generateBtn, loading && styles.generateBtnDisabled]}
-          onPress={generate}
-          disabled={loading}
-        >
-          {loading ? (
-            <View style={styles.loadingRow}>
-              <ActivityIndicator color={colors.text} />
-              <Text style={styles.loadingText}>Generating with AI...</Text>
-            </View>
-          ) : (
-            <Text style={styles.generateBtnText}>Generate Program</Text>
-          )}
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(900).duration(400)}>
+          <PressableScale
+            onPress={generate}
+            disabled={loading}
+            style={[styles.generateBtn, loading && { opacity: 0.6 }]}
+          >
+            {loading ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator color={colors.text} />
+                <Text style={styles.generateText}>Designing your program...</Text>
+              </View>
+            ) : (
+              <View style={styles.loadingRow}>
+                <Ionicons name="sparkles" size={20} color={colors.text} />
+                <Text style={styles.generateText}>Generate Program</Text>
+              </View>
+            )}
+          </PressableScale>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -307,78 +367,168 @@ export function GenerateProgramScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  contentContainer: { padding: 16, paddingBottom: 60 },
-  header: { paddingTop: 44, marginBottom: 8 },
-  backBtn: { ...typography.body, color: colors.accent, marginBottom: 8 },
-  title: { ...typography.h1, color: colors.text },
-  desc: { ...typography.body, color: colors.textSecondary, marginBottom: 24 },
-  label: { ...typography.bodyBold, color: colors.text, marginBottom: 8, marginTop: 16 },
-  optionRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  option: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
+  contentContainer: { padding: spacing.lg, paddingBottom: 80 },
+  header: { paddingTop: 44, marginBottom: spacing.lg },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
     backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  optionActive: { backgroundColor: colors.accent + '22', borderColor: colors.accent },
-  optionText: { ...typography.body, color: colors.textSecondary },
-  optionTextActive: { color: colors.accent, fontWeight: '600' },
-  equipmentGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  equipChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  equipChipActive: { backgroundColor: colors.accent + '22', borderColor: colors.accent },
-  equipText: { ...typography.caption, color: colors.textSecondary },
-  equipTextActive: { color: colors.accent, fontWeight: '600' },
-  machineToggle: { marginTop: 12, marginBottom: 8 },
-  machineToggleText: { ...typography.body, color: colors.accent },
-  machineGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  customEquipRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
-  addCustomBtn: {
-    backgroundColor: colors.accent,
-    width: 44,
-    height: 44,
-    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: spacing.lg,
   },
-  addCustomText: { ...typography.h2, color: colors.text },
-  input: {
+  headerContent: { alignItems: 'center' },
+  headerIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.accentDim,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  title: { ...typography.h1, color: colors.text, textAlign: 'center' },
+  desc: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.xs },
+
+  coachBubble: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.accent,
+  },
+  coachHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  coachLabel: { ...typography.captionBold, color: colors.accent },
+  coachText: { ...typography.body, color: colors.textSecondary, lineHeight: 22 },
+
+  label: {
+    ...typography.bodyBold,
+    color: colors.text,
+    marginBottom: spacing.sm,
+    marginTop: spacing.xl,
+  },
+  optionRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  numOption: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    minWidth: 48,
+    alignItems: 'center',
+  },
+  optionActive: { borderColor: colors.accent, backgroundColor: colors.accentDim },
+  optionText: { ...typography.body, color: colors.textSecondary },
+  optionTextActive: { color: colors.accentLight, fontWeight: '600' },
+  numText: { ...typography.bodyBold, color: colors.textSecondary },
+
+  equipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  equipChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  equipChipActive: { borderColor: colors.accent, backgroundColor: colors.accentDim },
+  equipText: { ...typography.caption, color: colors.textSecondary },
+  equipTextActive: { color: colors.accentLight, fontWeight: '600' },
+
+  machineToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  machineToggleText: { ...typography.body, color: colors.accent },
+
+  customRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
+  customInput: {
+    flex: 1,
     backgroundColor: colors.inputBg,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
     color: colors.text,
     ...typography.body,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  infoCard: {
-    backgroundColor: colors.accent + '15',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: colors.accent + '30',
+  addCustomBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.button,
   },
-  infoTitle: { ...typography.bodyBold, color: colors.accent, marginBottom: 8 },
-  infoItem: { ...typography.body, color: colors.text, marginBottom: 2 },
-  infoNote: { ...typography.caption, color: colors.textSecondary, marginTop: 8, fontStyle: 'italic' },
+
+  input: {
+    backgroundColor: colors.inputBg,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    color: colors.text,
+    ...typography.body,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  goalsCard: {
+    backgroundColor: colors.accentDim,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginTop: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.accentSoft,
+  },
+  goalsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  goalsTitle: { ...typography.bodyBold, color: colors.accent },
+  goalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  goalText: { ...typography.body, color: colors.text },
+  goalsNote: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.sm, fontStyle: 'italic' },
+
   generateBtn: {
     backgroundColor: colors.accent,
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: spacing.xxl,
+    ...shadows.button,
   },
-  generateBtnDisabled: { opacity: 0.6 },
-  generateBtnText: { ...typography.h3, color: colors.text },
-  loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  loadingText: { ...typography.body, color: colors.text },
+  generateText: { ...typography.h3, color: colors.text },
+  loadingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
 });

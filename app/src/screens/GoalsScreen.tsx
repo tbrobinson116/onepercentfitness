@@ -4,24 +4,41 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   Modal,
   Image,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { useStore } from '../services/store';
 import { api } from '../services/api';
-import { colors, typography } from '../theme';
+import { colors, typography, spacing, borderRadius, shadows } from '../theme';
+import { Card, PressableScale, SectionHeader, EmptyState, ProgressRing } from '../components/ui';
 import type { FitnessGoal, GoalType } from '../types';
 
-const GOAL_TYPES: { type: GoalType; label: string; icon: string }[] = [
-  { type: 'strength', label: 'Strength', icon: '🏋️' },
-  { type: 'physique', label: 'Physique', icon: '💪' },
-  { type: 'weight', label: 'Weight', icon: '⚖️' },
-  { type: 'endurance', label: 'Endurance', icon: '🏃' },
-  { type: 'custom', label: 'Custom', icon: '🎯' },
+const GOAL_TYPE_ICONS: Record<GoalType, keyof typeof Ionicons.glyphMap> = {
+  strength: 'barbell',
+  physique: 'body',
+  weight: 'scale',
+  endurance: 'walk',
+  custom: 'flag',
+};
+
+const GOAL_TYPES: { type: GoalType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { type: 'strength', label: 'Strength', icon: 'barbell' },
+  { type: 'physique', label: 'Physique', icon: 'body' },
+  { type: 'weight', label: 'Weight', icon: 'scale' },
+  { type: 'endurance', label: 'Endurance', icon: 'walk' },
+  { type: 'custom', label: 'Custom', icon: 'flag' },
+];
+
+const POPULAR_GOALS = [
+  { title: '1000 lb Club', desc: 'Squat + Bench + Deadlift = 1000 lbs', type: 'strength' as GoalType },
+  { title: '20 Pull-Ups', desc: 'Consecutive strict pull-ups', type: 'strength' as GoalType },
+  { title: 'Bench 250 lbs', desc: 'One-rep max bench press', type: 'strength' as GoalType },
+  { title: '10% Body Fat', desc: 'Lean physique goal', type: 'physique' as GoalType },
 ];
 
 export function GoalsScreen({ navigation }: any) {
@@ -160,156 +177,203 @@ export function GoalsScreen({ navigation }: any) {
     ]);
   };
 
+  const getGoalIcon = (type: GoalType): keyof typeof Ionicons.glyphMap =>
+    GOAL_TYPE_ICONS[type] ?? 'flag';
+
   return (
     <View style={styles.container}>
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Goals</Text>
-          <TouchableOpacity style={styles.addButton} onPress={() => setShowAddModal(true)}>
-            <Text style={styles.addButtonText}>+ Add Goal</Text>
-          </TouchableOpacity>
+          <View style={styles.headerLeft}>
+            <Ionicons name="trophy" size={28} color={colors.accent} />
+            <Text style={styles.title}>Goals</Text>
+          </View>
+          <PressableScale onPress={() => setShowAddModal(true)} style={styles.addButton}>
+            <Ionicons name="add-circle-outline" size={20} color={colors.text} />
+            <Text style={styles.addButtonText}>Add Goal</Text>
+          </PressableScale>
         </View>
 
         {/* Active Goals */}
-        <Text style={styles.sectionTitle}>Active Goals ({activeGoals.length})</Text>
-        {activeGoals.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No active goals</Text>
-            <Text style={styles.emptySubtext}>
-              Set a goal like "Bench 250 lbs" or "Hit the 1000 lb club"
-            </Text>
-          </View>
-        ) : (
-          activeGoals.map((goal) => (
-            <TouchableOpacity
-              key={goal.id}
-              style={styles.goalCard}
-              onLongPress={() => handleDeleteGoal(goal.id)}
-            >
-              <View style={styles.goalHeader}>
-                <Text style={styles.goalIcon}>
-                  {GOAL_TYPES.find((t) => t.type === goal.type)?.icon ?? '🎯'}
-                </Text>
-                <View style={styles.goalTitleSection}>
-                  <Text style={styles.goalTitle}>{goal.title}</Text>
-                  {goal.description && (
-                    <Text style={styles.goalDescription}>{goal.description}</Text>
-                  )}
-                </View>
-              </View>
+        <View style={styles.sectionContainer}>
+          <SectionHeader title={`ACTIVE GOALS (${activeGoals.length})`} />
 
-              {goal.type === 'strength' && goal.targetValue && (
-                <View style={styles.goalMetric}>
-                  <Text style={styles.metricCurrent}>{goal.currentValue ?? 0}</Text>
-                  <Text style={styles.metricSeparator}>/</Text>
-                  <Text style={styles.metricTarget}>
-                    {goal.targetValue} {goal.targetUnit}
-                  </Text>
+          {activeGoals.length === 0 ? (
+            <EmptyState
+              icon="flag-outline"
+              title="No active goals"
+              subtitle='Set a goal like "Bench 250 lbs" or "Hit the 1000 lb club"'
+              actionLabel="Create Goal"
+              onAction={() => setShowAddModal(true)}
+            />
+          ) : (
+            activeGoals.map((goal, index) => (
+              <Card
+                key={goal.id}
+                entering={FadeInDown.duration(400).delay(index * 80)}
+                style={styles.goalCard}
+              >
+                <View style={styles.goalHeader}>
+                  <View style={styles.goalIconContainer}>
+                    <Ionicons
+                      name={getGoalIcon(goal.type)}
+                      size={22}
+                      color={colors.accent}
+                    />
+                  </View>
+                  <View style={styles.goalTitleSection}>
+                    <Text style={styles.goalTitle}>{goal.title}</Text>
+                    {goal.description && (
+                      <Text style={styles.goalDescription}>{goal.description}</Text>
+                    )}
+                  </View>
+                  <ProgressRing
+                    progress={goal.progressPercent / 100}
+                    size={44}
+                    strokeWidth={4}
+                    color={colors.accent}
+                  >
+                    <Text style={styles.ringPercent}>{goal.progressPercent}%</Text>
+                  </ProgressRing>
                 </View>
-              )}
 
-              {/* Photo Comparison */}
-              {(goal.currentPhotoUri || goal.goalImageUri) && (
-                <View style={styles.photoRow}>
-                  {goal.currentPhotoUri ? (
-                    <TouchableOpacity
-                      style={styles.photoContainer}
-                      onPress={() => showImageOptions('currentPhotoUri', goal.id)}
-                    >
-                      <Image source={{ uri: goal.currentPhotoUri }} style={styles.goalPhoto} />
-                      <Text style={styles.photoLabel}>Current</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
+                {/* Strength metric */}
+                {goal.type === 'strength' && goal.targetValue && (
+                  <View style={styles.goalMetric}>
+                    <Text style={styles.metricCurrent}>{goal.currentValue ?? 0}</Text>
+                    <Text style={styles.metricSeparator}>/</Text>
+                    <Text style={styles.metricTarget}>
+                      {goal.targetValue} {goal.targetUnit}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Photo Comparison */}
+                {(goal.currentPhotoUri || goal.goalImageUri) && (
+                  <View style={styles.photoRow}>
+                    {goal.currentPhotoUri ? (
+                      <PressableScale
+                        style={styles.photoContainer}
+                        onPress={() => showImageOptions('currentPhotoUri', goal.id)}
+                      >
+                        <Image source={{ uri: goal.currentPhotoUri }} style={styles.goalPhoto} />
+                        <Text style={styles.photoLabel}>Current</Text>
+                      </PressableScale>
+                    ) : (
+                      <PressableScale
+                        style={styles.photoPlaceholder}
+                        onPress={() => showImageOptions('currentPhotoUri', goal.id)}
+                      >
+                        <Ionicons name="camera-outline" size={24} color={colors.accent} />
+                        <Text style={styles.photoPlaceholderText}>Current</Text>
+                      </PressableScale>
+                    )}
+                    {goal.goalImageUri ? (
+                      <PressableScale
+                        style={styles.photoContainer}
+                        onPress={() => showImageOptions('goalImageUri', goal.id)}
+                      >
+                        <Image source={{ uri: goal.goalImageUri }} style={styles.goalPhoto} />
+                        <Text style={styles.photoLabel}>Goal</Text>
+                      </PressableScale>
+                    ) : (
+                      <PressableScale
+                        style={styles.photoPlaceholder}
+                        onPress={() => showImageOptions('goalImageUri', goal.id)}
+                      >
+                        <Ionicons name="camera-outline" size={24} color={colors.accent} />
+                        <Text style={styles.photoPlaceholderText}>Goal</Text>
+                      </PressableScale>
+                    )}
+                  </View>
+                )}
+
+                {/* Photo placeholders for physique/weight goals without photos */}
+                {!goal.currentPhotoUri && !goal.goalImageUri && (goal.type === 'physique' || goal.type === 'weight') && (
+                  <View style={styles.photoRow}>
+                    <PressableScale
                       style={styles.photoPlaceholder}
                       onPress={() => showImageOptions('currentPhotoUri', goal.id)}
                     >
-                      <Text style={styles.photoPlaceholderText}>+ Current</Text>
-                    </TouchableOpacity>
-                  )}
-                  {goal.goalImageUri ? (
-                    <TouchableOpacity
-                      style={styles.photoContainer}
-                      onPress={() => showImageOptions('goalImageUri', goal.id)}
-                    >
-                      <Image source={{ uri: goal.goalImageUri }} style={styles.goalPhoto} />
-                      <Text style={styles.photoLabel}>Goal</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
+                      <Ionicons name="camera-outline" size={24} color={colors.accent} />
+                      <Text style={styles.photoPlaceholderText}>Current</Text>
+                    </PressableScale>
+                    <PressableScale
                       style={styles.photoPlaceholder}
                       onPress={() => showImageOptions('goalImageUri', goal.id)}
                     >
-                      <Text style={styles.photoPlaceholderText}>+ Goal</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
+                      <Ionicons name="camera-outline" size={24} color={colors.accent} />
+                      <Text style={styles.photoPlaceholderText}>Goal</Text>
+                    </PressableScale>
+                  </View>
+                )}
 
-              {/* Add photos button for physique/weight goals without photos */}
-              {!goal.currentPhotoUri && !goal.goalImageUri && (goal.type === 'physique' || goal.type === 'weight') && (
-                <View style={styles.photoRow}>
-                  <TouchableOpacity
-                    style={styles.photoPlaceholder}
-                    onPress={() => showImageOptions('currentPhotoUri', goal.id)}
-                  >
-                    <Text style={styles.photoPlaceholderText}>+ Current Photo</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.photoPlaceholder}
-                    onPress={() => showImageOptions('goalImageUri', goal.id)}
-                  >
-                    <Text style={styles.photoPlaceholderText}>+ Goal Photo</Text>
-                  </TouchableOpacity>
+                {/* Progress bar */}
+                <View style={styles.progressContainer}>
+                  <View style={styles.progressBar}>
+                    <View
+                      style={[styles.progressFill, { width: `${goal.progressPercent}%` }]}
+                    />
+                  </View>
+                  <Text style={styles.progressText}>{goal.progressPercent}%</Text>
                 </View>
-              )}
 
-              <View style={styles.progressContainer}>
-                <View style={styles.progressBar}>
-                  <View
-                    style={[styles.progressFill, { width: `${goal.progressPercent}%` }]}
-                  />
-                </View>
-                <Text style={styles.progressText}>{goal.progressPercent}%</Text>
-              </View>
-            </TouchableOpacity>
-          ))
-        )}
+                {/* Delete button */}
+                <PressableScale
+                  onPress={() => handleDeleteGoal(goal.id)}
+                  style={styles.deleteButton}
+                >
+                  <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                </PressableScale>
+              </Card>
+            ))
+          )}
+        </View>
 
         {/* Completed Goals */}
         {completedGoals.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Completed ({completedGoals.length})</Text>
-            {completedGoals.map((goal) => (
-              <View key={goal.id} style={[styles.goalCard, styles.completedCard]}>
-                <Text style={styles.goalTitle}>✅ {goal.title}</Text>
-              </View>
+          <View style={styles.sectionContainer}>
+            <SectionHeader title={`COMPLETED (${completedGoals.length})`} />
+            {completedGoals.map((goal, index) => (
+              <Card
+                key={goal.id}
+                entering={FadeInDown.duration(400).delay(index * 80)}
+                style={styles.completedCard}
+              >
+                <View style={styles.completedRow}>
+                  <Ionicons name="checkmark-circle" size={22} color={colors.secondary} />
+                  <Text style={styles.completedTitle}>{goal.title}</Text>
+                </View>
+              </Card>
             ))}
-          </>
+          </View>
         )}
 
-        {/* Popular Goals Section */}
-        <Text style={styles.sectionTitle}>Popular Goals</Text>
-        <View style={styles.popularGoals}>
-          {[
-            { title: '1000 lb Club', desc: 'Squat + Bench + Deadlift = 1000 lbs', type: 'strength' as GoalType },
-            { title: '20 Pull-Ups', desc: 'Consecutive strict pull-ups', type: 'strength' as GoalType },
-            { title: 'Bench 250 lbs', desc: 'One-rep max bench press', type: 'strength' as GoalType },
-            { title: '10% Body Fat', desc: 'Lean physique goal', type: 'physique' as GoalType },
-          ].map((suggestion, i) => (
-            <TouchableOpacity
-              key={i}
-              style={styles.popularGoal}
-              onPress={() => {
-                setNewGoal({ ...newGoal, type: suggestion.type, title: suggestion.title, description: suggestion.desc });
-                setShowAddModal(true);
-              }}
-            >
-              <Text style={styles.popularTitle}>{suggestion.title}</Text>
-              <Text style={styles.popularDesc}>{suggestion.desc}</Text>
-            </TouchableOpacity>
-          ))}
+        {/* Popular Goals */}
+        <View style={styles.sectionContainer}>
+          <SectionHeader title="POPULAR GOALS" />
+          <View style={styles.popularGrid}>
+            {POPULAR_GOALS.map((suggestion, i) => (
+              <PressableScale
+                key={i}
+                style={styles.popularGoal}
+                onPress={() => {
+                  setNewGoal({ ...newGoal, type: suggestion.type, title: suggestion.title, description: suggestion.desc });
+                  setShowAddModal(true);
+                }}
+              >
+                <View style={styles.popularHeader}>
+                  <Ionicons name="sparkles" size={16} color={colors.accent} />
+                  <Text style={styles.popularTitle}>{suggestion.title}</Text>
+                </View>
+                <Text style={styles.popularDesc}>{suggestion.desc}</Text>
+              </PressableScale>
+            ))}
+          </View>
         </View>
+
+        <View style={{ height: spacing.xxxl }} />
       </ScrollView>
 
       {/* Add Goal Modal */}
@@ -317,30 +381,38 @@ export function GoalsScreen({ navigation }: any) {
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}>
             <View style={styles.modal}>
+              {/* Modal handle */}
+              <View style={styles.modalHandle} />
+
               <Text style={styles.modalTitle}>New Goal</Text>
 
-              {/* Goal Type Selector */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeRow}>
-                {GOAL_TYPES.map((gt) => (
-                  <TouchableOpacity
-                    key={gt.type}
-                    style={[styles.typeChip, newGoal.type === gt.type && styles.typeChipActive]}
-                    onPress={() => setNewGoal({ ...newGoal, type: gt.type })}
-                  >
-                    <Text style={styles.typeIcon}>{gt.icon}</Text>
-                    <Text
-                      style={[styles.typeLabel, newGoal.type === gt.type && styles.typeLabelActive]}
+              {/* Goal Type Selector - styled chips */}
+              <View style={styles.chipRow}>
+                {GOAL_TYPES.map((gt) => {
+                  const isActive = newGoal.type === gt.type;
+                  return (
+                    <PressableScale
+                      key={gt.type}
+                      style={[styles.typeChip, isActive && styles.typeChipActive]}
+                      onPress={() => setNewGoal({ ...newGoal, type: gt.type })}
                     >
-                      {gt.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+                      <Ionicons
+                        name={gt.icon}
+                        size={16}
+                        color={isActive ? colors.accentLight : colors.textSecondary}
+                      />
+                      <Text style={[styles.typeLabel, isActive && styles.typeLabelActive]}>
+                        {gt.label}
+                      </Text>
+                    </PressableScale>
+                  );
+                })}
+              </View>
 
               <TextInput
                 style={styles.input}
                 placeholder="Goal title (e.g., Bench 250 lbs)"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.textMuted}
                 value={newGoal.title}
                 onChangeText={(title) => setNewGoal({ ...newGoal, title })}
               />
@@ -348,7 +420,7 @@ export function GoalsScreen({ navigation }: any) {
               <TextInput
                 style={[styles.input, styles.multilineInput]}
                 placeholder="Description (optional)"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.textMuted}
                 value={newGoal.description}
                 onChangeText={(description) => setNewGoal({ ...newGoal, description })}
                 multiline
@@ -359,7 +431,7 @@ export function GoalsScreen({ navigation }: any) {
                   <TextInput
                     style={styles.input}
                     placeholder="Exercise (e.g., Bench Press)"
-                    placeholderTextColor={colors.textSecondary}
+                    placeholderTextColor={colors.textMuted}
                     value={newGoal.exercise}
                     onChangeText={(exercise) => setNewGoal({ ...newGoal, exercise })}
                   />
@@ -367,7 +439,7 @@ export function GoalsScreen({ navigation }: any) {
                     <TextInput
                       style={[styles.input, styles.halfInput]}
                       placeholder="Target value"
-                      placeholderTextColor={colors.textSecondary}
+                      placeholderTextColor={colors.textMuted}
                       keyboardType="numeric"
                       value={newGoal.targetValue}
                       onChangeText={(targetValue) => setNewGoal({ ...newGoal, targetValue })}
@@ -375,7 +447,7 @@ export function GoalsScreen({ navigation }: any) {
                     <TextInput
                       style={[styles.input, styles.halfInput]}
                       placeholder="Unit (lbs, kg, reps)"
-                      placeholderTextColor={colors.textSecondary}
+                      placeholderTextColor={colors.textMuted}
                       value={newGoal.targetUnit}
                       onChangeText={(targetUnit) => setNewGoal({ ...newGoal, targetUnit })}
                     />
@@ -388,7 +460,7 @@ export function GoalsScreen({ navigation }: any) {
                   <TextInput
                     style={[styles.input, styles.halfInput]}
                     placeholder="Target weight (kg)"
-                    placeholderTextColor={colors.textSecondary}
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="numeric"
                     value={newGoal.targetWeightKg}
                     onChangeText={(targetWeightKg) => setNewGoal({ ...newGoal, targetWeightKg })}
@@ -396,7 +468,7 @@ export function GoalsScreen({ navigation }: any) {
                   <TextInput
                     style={[styles.input, styles.halfInput]}
                     placeholder="Target BF%"
-                    placeholderTextColor={colors.textSecondary}
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="numeric"
                     value={newGoal.targetBodyFatPercent}
                     onChangeText={(targetBodyFatPercent) =>
@@ -411,7 +483,7 @@ export function GoalsScreen({ navigation }: any) {
                 <>
                   <Text style={styles.photoSectionTitle}>Progress Photos</Text>
                   <View style={styles.photoRow}>
-                    <TouchableOpacity
+                    <PressableScale
                       style={newGoal.currentPhotoUri ? styles.photoContainer : styles.photoPlaceholder}
                       onPress={() => showImageOptions('currentPhotoUri')}
                     >
@@ -421,10 +493,13 @@ export function GoalsScreen({ navigation }: any) {
                           <Text style={styles.photoLabel}>Current</Text>
                         </>
                       ) : (
-                        <Text style={styles.photoPlaceholderText}>+ Current Photo</Text>
+                        <>
+                          <Ionicons name="camera-outline" size={28} color={colors.accent} />
+                          <Text style={styles.photoPlaceholderText}>Current Photo</Text>
+                        </>
                       )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </PressableScale>
+                    <PressableScale
                       style={newGoal.goalImageUri ? styles.photoContainer : styles.photoPlaceholder}
                       onPress={() => showImageOptions('goalImageUri')}
                     >
@@ -434,23 +509,27 @@ export function GoalsScreen({ navigation }: any) {
                           <Text style={styles.photoLabel}>Goal</Text>
                         </>
                       ) : (
-                        <Text style={styles.photoPlaceholderText}>+ Goal / Inspiration</Text>
+                        <>
+                          <Ionicons name="camera-outline" size={28} color={colors.accent} />
+                          <Text style={styles.photoPlaceholderText}>Goal / Inspiration</Text>
+                        </>
                       )}
-                    </TouchableOpacity>
+                    </PressableScale>
                   </View>
                 </>
               )}
 
               <View style={styles.modalActions}>
-                <TouchableOpacity
+                <PressableScale
                   style={styles.cancelButton}
                   onPress={() => setShowAddModal(false)}
                 >
                   <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.saveButton} onPress={handleAddGoal}>
+                </PressableScale>
+                <PressableScale style={styles.saveButton} onPress={handleAddGoal}>
+                  <Ionicons name="add-circle" size={18} color={colors.text} style={{ marginRight: spacing.xs }} />
                   <Text style={styles.saveText}>Add Goal</Text>
-                </TouchableOpacity>
+                </PressableScale>
               </View>
             </View>
           </ScrollView>
@@ -461,90 +540,139 @@ export function GoalsScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+
+  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
+    paddingHorizontal: spacing.xxl,
     paddingTop: 60,
+    paddingBottom: spacing.lg,
   },
-  title: { ...typography.h1, color: colors.text },
-  addButton: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  addButtonText: { ...typography.bodyBold, color: colors.text },
-  sectionTitle: {
-    ...typography.h3,
-    color: colors.textSecondary,
-    paddingHorizontal: 24,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyCard: {
-    backgroundColor: colors.card,
-    marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 24,
+  headerLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.md,
   },
-  emptyText: { ...typography.body, color: colors.textSecondary },
-  emptySubtext: { ...typography.caption, color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
+  title: {
+    ...typography.h1,
+    color: colors.text,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: borderRadius.full,
+    ...shadows.button,
+  },
+  addButtonText: {
+    ...typography.captionBold,
+    color: colors.text,
+  },
+
+  // Sections
+  sectionContainer: {
+    paddingHorizontal: spacing.xxl,
+  },
+
+  // Goal card
   goalCard: {
-    backgroundColor: colors.card,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    borderRadius: 16,
-    padding: 16,
+    position: 'relative' as const,
   },
-  completedCard: { opacity: 0.6 },
-  goalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  goalIcon: { fontSize: 24, marginRight: 12 },
-  goalTitleSection: { flex: 1 },
-  goalTitle: { ...typography.bodyBold, color: colors.text },
-  goalDescription: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  goalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  goalIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.accentDim,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  goalTitleSection: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  goalTitle: {
+    ...typography.bodyBold,
+    color: colors.text,
+  },
+  goalDescription: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  ringPercent: {
+    ...typography.small,
+    color: colors.text,
+  },
+
+  // Strength metric
   goalMetric: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginBottom: 8,
+    marginBottom: spacing.md,
+    paddingLeft: 52,
   },
-  metricCurrent: { ...typography.h2, color: colors.accent },
-  metricSeparator: { ...typography.body, color: colors.textSecondary, marginHorizontal: 4 },
-  metricTarget: { ...typography.body, color: colors.textSecondary },
+  metricCurrent: {
+    ...typography.h2,
+    color: colors.accent,
+  },
+  metricSeparator: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginHorizontal: spacing.xs,
+  },
+  metricTarget: {
+    ...typography.body,
+    color: colors.textSecondary,
+  },
+
+  // Photos
   photoRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    gap: spacing.md,
+    marginBottom: spacing.md,
   },
   photoContainer: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     overflow: 'hidden',
   },
   goalPhoto: {
     width: '100%',
     height: 140,
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
   },
   photoLabel: {
     ...typography.caption,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   photoPlaceholder: {
     flex: 1,
-    height: 100,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    height: 110,
+    borderRadius: borderRadius.md,
+    borderWidth: 1.5,
+    borderColor: colors.borderLight,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.inputBg,
+    backgroundColor: colors.cardLight,
+    gap: spacing.sm,
   },
   photoPlaceholderText: {
     ...typography.caption,
@@ -553,90 +681,202 @@ const styles = StyleSheet.create({
   photoSectionTitle: {
     ...typography.bodyBold,
     color: colors.text,
-    marginBottom: 8,
-    marginTop: 4,
+    marginBottom: spacing.sm,
+    marginTop: spacing.xs,
   },
+
+  // Progress bar
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   progressBar: {
     flex: 1,
-    height: 6,
+    height: 8,
     backgroundColor: colors.border,
-    borderRadius: 3,
+    borderRadius: 4,
     overflow: 'hidden',
   },
-  progressFill: { height: '100%', backgroundColor: colors.accent, borderRadius: 3 },
-  progressText: { ...typography.caption, color: colors.accent, width: 36, textAlign: 'right' },
-  popularGoals: { paddingHorizontal: 16, marginBottom: 32 },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.accent,
+    borderRadius: 4,
+  },
+  progressText: {
+    ...typography.captionBold,
+    color: colors.accent,
+    width: 36,
+    textAlign: 'right',
+  },
+
+  // Delete button
+  deleteButton: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.dangerDim,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Completed goals
+  completedCard: {
+    opacity: 0.7,
+  },
+  completedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  completedTitle: {
+    ...typography.bodyBold,
+    color: colors.text,
+    flex: 1,
+  },
+
+  // Popular goals
+  popularGrid: {
+    gap: spacing.sm,
+    marginBottom: spacing.xxxl,
+  },
   popularGoal: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
+    backgroundColor: colors.cardLight,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    borderStyle: 'dashed',
   },
-  popularTitle: { ...typography.bodyBold, color: colors.text },
-  popularDesc: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  popularHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  popularTitle: {
+    ...typography.bodyBold,
+    color: colors.text,
+  },
+  popularDesc: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginLeft: spacing.xxl,
+  },
+
+  // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.overlay,
   },
   modal: {
     backgroundColor: colors.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.xxl,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderColor: colors.border,
   },
-  modalTitle: { ...typography.h2, color: colors.text, marginBottom: 16 },
-  typeRow: { flexDirection: 'row', marginBottom: 16 },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.borderLight,
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+  },
+  modalTitle: {
+    ...typography.h2,
+    color: colors.text,
+    marginBottom: spacing.xl,
+  },
+
+  // Chip type selector
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
+  },
   typeChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.inputBg,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.cardLight,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
   },
-  typeChipActive: { borderColor: colors.accent, backgroundColor: colors.accent + '22' },
-  typeIcon: { fontSize: 16, marginRight: 4 },
-  typeLabel: { ...typography.caption, color: colors.textSecondary },
-  typeLabelActive: { color: colors.accent },
+  typeChipActive: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentDim,
+  },
+  typeLabel: {
+    ...typography.captionBold,
+    color: colors.textSecondary,
+  },
+  typeLabelActive: {
+    color: colors.accentLight,
+  },
+
+  // Inputs
   input: {
     backgroundColor: colors.inputBg,
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     padding: 14,
     color: colors.text,
     ...typography.body,
-    marginBottom: 12,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  multilineInput: { minHeight: 60, textAlignVertical: 'top' },
-  row: { flexDirection: 'row', gap: 8 },
-  halfInput: { flex: 1 },
-  modalActions: { flexDirection: 'row', marginTop: 8, gap: 12 },
+  multilineInput: {
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  row: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  halfInput: {
+    flex: 1,
+  },
+
+  // Modal actions
+  modalActions: {
+    flexDirection: 'row',
+    marginTop: spacing.lg,
+    gap: spacing.md,
+  },
   cancelButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: colors.inputBg,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.cardLight,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  cancelText: { ...typography.bodyBold, color: colors.textSecondary },
+  cancelText: {
+    ...typography.bodyBold,
+    color: colors.textSecondary,
+  },
   saveButton: {
     flex: 1,
+    flexDirection: 'row',
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     backgroundColor: colors.accent,
     alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.button,
   },
-  saveText: { ...typography.bodyBold, color: colors.text },
+  saveText: {
+    ...typography.bodyBold,
+    color: colors.text,
+  },
 });
