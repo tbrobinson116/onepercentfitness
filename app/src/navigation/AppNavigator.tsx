@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -95,8 +95,14 @@ const loadStyles = StyleSheet.create({
 export function AppNavigator() {
   const isOnboarded = useStore((s) => s.isOnboarded);
   const hasHydrated = useStore((s) => s._hasHydrated);
+  const [timedOut, setTimedOut] = useState(false);
 
-  if (!hasHydrated) {
+  useEffect(() => {
+    const timer = setTimeout(() => setTimedOut(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!hasHydrated && !timedOut) {
     return <LoadingScreen />;
   }
 
