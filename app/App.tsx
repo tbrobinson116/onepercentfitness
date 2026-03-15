@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { useStore } from './src/services/store';
 
-const FORCE_RESET = true;
+const FORCE_RESET = false;
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -48,7 +48,11 @@ export default function App() {
     }
   }, []);
 
-  if (!resetDone) return null;
+  if (!resetDone) {
+    console.log('[App] Waiting for reset...');
+    return null;
+  }
+  console.log('[App] Rendering main app');
 
   return (
     <ErrorBoundary>
