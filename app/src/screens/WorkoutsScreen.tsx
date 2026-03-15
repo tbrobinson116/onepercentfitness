@@ -47,7 +47,7 @@ const TAB_LABELS: Record<Tab, string> = {
 };
 
 export function WorkoutsScreen({ navigation }: any) {
-  const { workouts, programs, setWorkouts, setPrograms, setActiveWorkout, weightUnit } = useStore();
+  const { workouts, programs, setWorkouts, setPrograms, setActiveWorkout, weightUnit, programProgress } = useStore();
   const [tab, setTab] = useState<Tab>('today');
 
   const loadData = useCallback(async () => {
@@ -213,6 +213,7 @@ export function WorkoutsScreen({ navigation }: any) {
                     program={program}
                     index={index}
                     onStartDay={(dayIndex) => startProgramWorkout(program.id, dayIndex)}
+                    onOpenProgram={() => navigation.navigate('ProgramDetail', { programId: program.id })}
                   />
                 ))}
               </>
@@ -280,6 +281,7 @@ export function WorkoutsScreen({ navigation }: any) {
                 index={index}
                 onStartDay={(dayIndex) => startProgramWorkout(program.id, dayIndex)}
                 onDelete={() => deleteProgram(program.id)}
+                onOpenProgram={() => navigation.navigate('ProgramDetail', { programId: program.id })}
               />
             ))}
           </>
@@ -294,50 +296,40 @@ function ProgramQuickStart({
   program,
   index,
   onStartDay,
+  onOpenProgram,
 }: {
   program: WorkoutProgram;
   index: number;
   onStartDay: (dayIndex: number) => void;
+  onOpenProgram: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const { programProgress: progress } = useStore();
+  const nextIndex = progress[program.id] ?? 0;
+  const nextDay = program.workouts[nextIndex];
 
   return (
-    <Card
-      style={styles.programQuickCard}
-    >
-      <PressableScale onPress={() => setExpanded(!expanded)} style={styles.programQuickHeader}>
+    <Card style={styles.programQuickCard} onPress={onOpenProgram}>
+      <View style={styles.programQuickHeader}>
         <View style={{ flex: 1 }}>
           <Text style={styles.programName}>{program.name}</Text>
           <Text style={styles.programDesc}>{program.description}</Text>
         </View>
-        <Ionicons
-          name={expanded ? 'chevron-down' : 'chevron-forward'}
-          size={20}
-          color={colors.textSecondary}
-        />
-      </PressableScale>
-
-      {expanded ? (
-        program.workouts.map((day, i) => (
-          <DayRow
-            key={i}
-            dayName={day.dayName}
-            exercises={day.exercises.slice(0, 3).map((e) => e.exercise.name)}
-            extraCount={day.exercises.length > 3 ? day.exercises.length - 3 : 0}
-            onStart={() => onStartDay(i)}
-          />
-        ))
-      ) : (
-        <DayRow
-          dayName={program.workouts[0]?.dayName ?? ''}
-          exercises={program.workouts[0]?.exercises.slice(0, 3).map((e) => e.exercise.name) ?? []}
-          extraCount={
-            (program.workouts[0]?.exercises.length ?? 0) > 3
-              ? (program.workouts[0]?.exercises.length ?? 0) - 3
-              : 0
-          }
-          onStart={() => onStartDay(0)}
-        />
+        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+      </View>
+      {nextDay && (
+        <View style={styles.dayRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.dayName}>
+              Up next: {nextDay.dayName}
+            </Text>
+            <Text style={styles.dayExercisePreview}>
+              {nextDay.exercises.slice(0, 3).map((e) => e.exercise.name).join(', ')}
+              {nextDay.exercises.length > 3
+                ? ` +${nextDay.exercises.length - 3} more`
+                : ''}
+            </Text>
+          </View>
+        </View>
       )}
     </Card>
   );
@@ -375,14 +367,16 @@ function ProgramDetailCard({
   index,
   onStartDay,
   onDelete,
+  onOpenProgram,
 }: {
   program: WorkoutProgram;
   index: number;
   onStartDay: (dayIndex: number) => void;
   onDelete: () => void;
+  onOpenProgram: () => void;
 }) {
   return (
-    <Card>
+    <Card onPress={onOpenProgram}>
       <View style={styles.programHeaderRow}>
         <View style={{ flex: 1 }}>
           <Text style={styles.programName}>{program.name}</Text>
@@ -409,10 +403,9 @@ function ProgramDetailCard({
       </View>
 
       {program.workouts.map((day, i) => (
-        <PressableScale
+        <View
           key={i}
           style={styles.dayRowDetail}
-          onPress={() => onStartDay(i)}
         >
           <View style={{ flex: 1 }}>
             <Text style={styles.dayName}>{day.dayName}</Text>
@@ -420,8 +413,7 @@ function ProgramDetailCard({
               {day.exercises.map((e) => e.exercise.name).join(' \u00B7 ')}
             </Text>
           </View>
-          <Ionicons name="play-circle" size={28} color={colors.accent} />
-        </PressableScale>
+        </View>
       ))}
     </Card>
   );

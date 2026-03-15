@@ -52,6 +52,23 @@ When you have enough info, tell the user you're ready to build their program. In
 }
 \`\`\`
 
+## Modifying Workouts (Exercise Swaps)
+When the user is viewing their current workout and asks to swap/replace/change an exercise, you MUST include a JSON block wrapped in \`\`\`exercise-swap tags. Confirm what you're swapping and why the alternative is good.
+
+\`\`\`exercise-swap
+{
+  "oldExercise": "Barbell Bench Press",
+  "newExercise": "Incline Barbell Press",
+  "equipment": "barbell",
+  "primaryMuscle": "chest"
+}
+\`\`\`
+
+You can also handle requests like:
+- "Add more sets" — explain you'll adjust and provide the swap block with the same exercise
+- "Make this shorter" — suggest removing or combining exercises
+- "I don't have X equipment today" — suggest alternatives
+
 ## Answering Questions
 You have deep knowledge of:
 - Exercise science and periodization
@@ -77,6 +94,13 @@ const chatSchema = z.object({
   context: z.object({
     isOnboarding: z.boolean().optional(),
     userProfile: z.any().optional(),
+    currentProgram: z.object({
+      name: z.string(),
+      dayName: z.string(),
+      dayIndex: z.number(),
+      exercises: z.string(),
+      muscleGroups: z.array(z.string()),
+    }).optional(),
   }).optional(),
 });
 
@@ -92,6 +116,17 @@ router.post('/chat', async (req: Request, res: Response) => {
     }
     if (context?.userProfile) {
       systemPrompt += `\n\nUser profile data already collected: ${JSON.stringify(context.userProfile)}`;
+    }
+    if (context?.currentProgram) {
+      const cp = context.currentProgram;
+      systemPrompt += `\n\nThe user is currently viewing their workout for today. Here is the context:
+**Program:** ${cp.name}
+**Today's Session:** ${cp.dayName}
+**Muscle Groups:** ${cp.muscleGroups.join(', ')}
+**Current Exercises:**
+${cp.exercises}
+
+When the user asks to swap, replace, or change an exercise, respond with a brief explanation and include an \`\`\`exercise-swap JSON block. Keep your response short and actionable.`;
     }
 
     const aiMessages = [
@@ -110,14 +145,25 @@ router.post('/chat', async (req: Request, res: Response) => {
 
     // Check if the response contains a workout program
     const programMatch = response.match(/```workout-program\n([\s\S]*?)\n```/);
-    let program = null;
+    let program: any = null;
     let textResponse = response;
 
     if (programMatch) {
       try {
         program = JSON.parse(programMatch[1]);
-        // Remove the program JSON from the text response
         textResponse = response.replace(/```workout-program\n[\s\S]*?\n```/, '').trim();
+      } catch {
+        // If JSON parsing fails, just return the full text
+      }
+    }
+
+    // Check for exercise swap
+    const swapMatch = response.match(/```exercise-swap\n([\s\S]*?)\n```/);
+    if (swapMatch) {
+      try {
+        const swap = JSON.parse(swapMatch[1]);
+        program = { swap };
+        textResponse = response.replace(/```exercise-swap\n[\s\S]*?\n```/, '').trim();
       } catch {
         // If JSON parsing fails, just return the full text
       }

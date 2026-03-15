@@ -88,6 +88,11 @@ interface AppState {
   addFridgeItem: (item: FridgeItem) => void;
   removeFridgeItem: (id: string) => void;
 
+  // Program progress — tracks which day index to do next per program
+  programProgress: Record<string, number>; // programId → next day index
+  advanceProgramDay: (programId: string, totalDays: number) => void;
+  setProgramProgress: (progress: Record<string, number>) => void;
+
   // Workout history (for progressive overload)
   workoutHistory: Workout[];
   addToHistory: (w: Workout) => void;
@@ -187,6 +192,17 @@ export const useStore = create<AppState>()(
       removeFridgeItem: (id) =>
         set((s) => ({ fridgeItems: s.fridgeItems.filter((i) => i.id !== id) })),
 
+      // Program progress
+      programProgress: {},
+      advanceProgramDay: (programId, totalDays) =>
+        set((s) => ({
+          programProgress: {
+            ...s.programProgress,
+            [programId]: ((s.programProgress[programId] ?? 0) + 1) % totalDays,
+          },
+        })),
+      setProgramProgress: (programProgress) => set({ programProgress }),
+
       // Workout history
       workoutHistory: [],
       addToHistory: (w) =>
@@ -232,6 +248,7 @@ export const useStore = create<AppState>()(
         macroTargets: state.macroTargets,
         recipes: state.recipes,
         fridgeItems: state.fridgeItems,
+        programProgress: state.programProgress,
         workoutHistory: state.workoutHistory,
         progressPhotos: state.progressPhotos,
         weightUnit: state.weightUnit,

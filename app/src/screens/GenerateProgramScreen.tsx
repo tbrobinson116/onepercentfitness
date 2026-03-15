@@ -103,9 +103,7 @@ export function GenerateProgramScreen({ navigation }: any) {
         preferences: fullPreferences || undefined,
       });
       addProgram(program);
-      Alert.alert('Program Generated!', program.name, [
-        { text: 'View', onPress: () => navigation.goBack() },
-      ]);
+      navigation.replace('ProgramDetail', { programId: program.id });
     } catch (error: any) {
       Alert.alert('Error', error?.message || 'Failed to generate program. Make sure the API is running.');
     }

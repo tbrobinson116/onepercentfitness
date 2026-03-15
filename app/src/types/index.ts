@@ -363,6 +363,7 @@ export type RootStackParamList = {
   FridgeManager: undefined;
   WorkoutAnalytics: undefined;
   ProgressPhotos: undefined;
+  ProgramDetail: { programId: string };
 };
 
 export type TabParamList = {
