@@ -1,12 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppNavigator } from './src/navigation/AppNavigator';
-import { useStore } from './src/services/store';
-
-const FORCE_RESET = false;
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -35,25 +31,6 @@ class ErrorBoundary extends React.Component<
 }
 
 export default function App() {
-  const [resetDone, setResetDone] = useState(!FORCE_RESET);
-
-  useEffect(() => {
-    if (FORCE_RESET) {
-      AsyncStorage.clear()
-        .catch(() => {})
-        .finally(() => {
-          useStore.getState().setOnboarded(false);
-          setResetDone(true);
-        });
-    }
-  }, []);
-
-  if (!resetDone) {
-    console.log('[App] Waiting for reset...');
-    return null;
-  }
-  console.log('[App] Rendering main app');
-
   return (
     <ErrorBoundary>
       <SafeAreaProvider>

@@ -96,7 +96,11 @@ export function AppNavigator() {
   const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setTimedOut(true), 2000);
+    console.log('[Nav] hasHydrated:', hasHydrated, 'isOnboarded:', isOnboarded);
+    const timer = setTimeout(() => {
+      console.log('[Nav] Hydration timed out, forcing...');
+      setTimedOut(true);
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
 

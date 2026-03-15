@@ -217,8 +217,6 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'onepercent-fitness-storage',
-      // Bump version to force re-onboarding with new coach chat UI
-      version: 2,
       storage: createJSONStorage(() => AsyncStorage),
       // Don't persist transient UI state
       partialize: (state) => ({
@@ -238,15 +236,18 @@ export const useStore = create<AppState>()(
         progressPhotos: state.progressPhotos,
         weightUnit: state.weightUnit,
       }),
-      migrate: (persistedState: any, version: number) => {
-        // Version 2: force re-onboarding for new coach chat UI
-        if (version < 2) {
-          return { ...persistedState, isOnboarded: false };
+      // Don't persist isOnboarded — always start fresh for now
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...(persistedState as object),
+        isOnboarded: false,
+      }),
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.warn('[Store] Rehydration error:', error);
         }
-        return persistedState as any;
-      },
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
+        // Always mark hydrated, even on error
+        useStore.getState().setHasHydrated(true);
       },
     }
   )
