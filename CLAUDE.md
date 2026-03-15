@@ -5,10 +5,27 @@
 
 ## Project Overview
 
-**One Percent Fitness** is a comprehensive fitness app that combines AI-powered workout programming, nutrition tracking, and goal setting. Get 1% better every day.
+**One Percent Fitness** is your AI-powered personal fitness coach, nutritionist, and health advisor — all in one app. Get 1% better every day.
+
+### Core Product Vision
+
+The app IS the coach. Imagine you just got a personal trainer who is also your nutritionist and health advisor. They know your goals, your body, your schedule, your injuries, and your personality. They build your programs, plan your meals, track your progress, motivate you, and adapt everything as you grow.
+
+**What sets us apart:** We lean hard into AI as the interactive coach — not just a tool that generates plans. The coach converses with you, learns your preferences, adapts its personality to what motivates YOU (tough love drill sergeant, encouraging mentor, data-driven analyst — whatever works). Other apps generate workouts. We give you a relationship with a coach that gets you results.
+
+**The goal:** Help people achieve their health and fitness goals, prove progress with data, build confidence, and eventually manage on their own.
+
+### Key Principles
+- **Coach-first experience** — Every interaction should feel like talking to a knowledgeable, personable coach
+- **Conversational AI onboarding** — The first experience is a back-and-forth chat, not a boring form
+- **Personality-adaptive coaching** — Motivational style adapts to user (drill sergeant, supportive friend, analytical coach, etc.)
+- **All-in-one** — Fitness + nutrition + health tracking + motivation in a single coherent experience
+- **Show the proof** — Track everything, visualize progress, prove it's working
+- **Don't reinvent the wheel** — Copy proven UX patterns (Fitbod-style tracking, etc.) for the mechanical stuff; innovate on the AI coaching layer
 
 ### Core Features
 ```
+🤖 AI Coach          → Conversational personal coach that knows you and adapts to your style
 🎯 Goal Setting      → Set strength, physique, weight, and custom goals with photo references
 💪 Workout Programs   → AI-generated periodized programs (like Fitbod)
 📊 Workout Tracking   → Log sets, reps, weight with Fitbod-style UI
