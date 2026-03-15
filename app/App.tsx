@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { useStore } from './src/services/store';
 
-const FORCE_RESET = false;
+const FORCE_RESET = true;
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
