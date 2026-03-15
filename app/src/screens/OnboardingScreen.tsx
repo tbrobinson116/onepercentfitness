@@ -481,7 +481,8 @@ const FALLBACK_CONVERSATION: { trigger: number; message: string; quickReplies?: 
       { label: 'Get Stronger', value: 'I want to get stronger and increase my lifts', icon: 'fitness' },
       { label: 'Lose Weight', value: 'I want to lose weight and burn fat', icon: 'flash' },
       { label: 'Get Lean', value: 'I want to get lean and tone up', icon: 'flame' },
-      { label: 'General Fitness', value: 'Just general fitness and health', icon: 'heart' },
+      { label: 'Improve Endurance', value: 'I want to improve my endurance and cardio', icon: 'bicycle' },
+      { label: 'General Health', value: 'Just general fitness and health', icon: 'heart' },
     ],
   },
   {
@@ -993,9 +994,9 @@ export function OnboardingScreen({ navigation }: any) {
               <Ionicons name="sparkles" size={20} color={colors.accent} />
             </View>
             <View>
-              <Text style={styles.headerTitle}>Coach</Text>
+              <Text style={styles.headerTitle}>Your Coach</Text>
               <Text style={styles.headerSubtitle}>
-                {isCoachTyping ? 'typing...' : 'AI Training Partner'}
+                {isCoachTyping ? 'typing...' : '1% Better Every Day'}
               </Text>
             </View>
           </View>
