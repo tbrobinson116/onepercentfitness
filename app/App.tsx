@@ -39,10 +39,12 @@ export default function App() {
 
   useEffect(() => {
     if (FORCE_RESET) {
-      AsyncStorage.clear().then(() => {
-        useStore.getState().setOnboarded(false);
-        setResetDone(true);
-      });
+      AsyncStorage.clear()
+        .catch(() => {})
+        .finally(() => {
+          useStore.getState().setOnboarded(false);
+          setResetDone(true);
+        });
     }
   }, []);
 
