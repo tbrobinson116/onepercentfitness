@@ -253,11 +253,9 @@ export const useStore = create<AppState>()(
         progressPhotos: state.progressPhotos,
         weightUnit: state.weightUnit,
       }),
-      // Don't persist isOnboarded — always start fresh for now
       merge: (persistedState, currentState) => ({
         ...currentState,
         ...(persistedState as object),
-        isOnboarded: false,
       }),
       onRehydrateStorage: () => (state, error) => {
         if (error) {
