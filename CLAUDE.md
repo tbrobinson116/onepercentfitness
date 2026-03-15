@@ -274,6 +274,7 @@ npm test                 # Run tests
 3. **Type Safety:** All new code must use TypeScript with strict mode
 4. **Minimal Changes:** Only change what's necessary
 5. **Exercise Database:** Add new exercises to `/api/src/data/exercises.ts`
+6. **Always provide test instructions:** When finishing any task, give the user the exact commands to run and steps to test the changes. Never leave the user guessing how to verify the work.
 
 ### Things to Avoid
 - Hardcoding API keys
