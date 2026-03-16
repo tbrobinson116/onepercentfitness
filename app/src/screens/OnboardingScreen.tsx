@@ -987,6 +987,13 @@ export function OnboardingScreen({ navigation }: any) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
+        {/* DEBUG BANNER — remove once we confirm new code loads */}
+        <View style={{ backgroundColor: '#ff0000', padding: 8 }}>
+          <Text style={{ color: '#ffffff', fontWeight: '900', fontSize: 16, textAlign: 'center' }}>
+            CHAT V2 — {new Date().toLocaleTimeString()}
+          </Text>
+        </View>
+
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
